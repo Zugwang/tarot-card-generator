@@ -9,7 +9,9 @@
     onselect,
   }: { card: Card; selected?: boolean; onselect?: () => void } = $props();
 
-  const svg = $derived(renderCardSVG(card, { suitVariants: editor.suitVariants }));
+  const svg = $derived(
+    renderCardSVG(card, { suitVariants: editor.suitVariants, pipSize: editor.pipSize }),
+  );
 </script>
 
 <button class="cardview" class:selected type="button" onclick={onselect} aria-pressed={selected}>

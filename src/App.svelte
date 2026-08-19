@@ -47,6 +47,21 @@
     <!-- Left: design controls -->
     <aside class="rail left">
       <SuitVariantPicker />
+
+      <div class="control">
+        <label for="pipsize">
+          Taille des enseignes
+          <span class="val">{editor.pipSize} px</span>
+        </label>
+        <input
+          id="pipsize"
+          type="range"
+          min="18"
+          max="52"
+          step="1"
+          bind:value={editor.pipSize}
+        />
+      </div>
     </aside>
 
     <!-- Center: stage -->
@@ -171,6 +186,29 @@
     letter-spacing: 0.08em;
     opacity: 0.6;
     margin: 0 0 0.8rem;
+  }
+
+  .control {
+    margin-top: 1.4rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+  }
+  .control label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .control .val {
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.6;
+  }
+  .control input[type='range'] {
+    width: 100%;
+    accent-color: var(--accent);
   }
 
   .stage {

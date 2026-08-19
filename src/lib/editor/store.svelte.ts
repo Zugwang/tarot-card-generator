@@ -15,6 +15,8 @@ export const editor = $state({
   deckSize: 52 as DeckSize,
   viewMode: 'mosaic' as ViewMode,
   suitVariants: defaultVariants(),
+  /** Suit-symbol size (card units) on pip cards. */
+  pipSize: 34,
   selectedId: null as string | null,
 });
 
