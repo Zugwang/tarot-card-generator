@@ -17,6 +17,8 @@ const ACE_SIZE = 82; // large centered Ace
 
 export interface RenderOptions {
   pipTemplate?: PipTemplate;
+  /** Chosen enseigne variant id per suit (falls back to each suit's default). */
+  suitVariants?: Partial<Record<Suit, string>>;
 }
 
 /** One suit symbol placed at (cx,cy), rotated, scaled to `size`. */
@@ -28,9 +30,9 @@ function placeSymbol(inner: string, cx: number, cy: number, size: number, rot: n
   );
 }
 
-function cornerIndex(label: string, suit: Suit): string {
+function cornerIndex(label: string, suit: Suit, variantId?: string): string {
   const color = suitColor(suit);
-  const mini = suitSymbol(suit, color);
+  const mini = suitSymbol(suit, variantId, color);
   // Top-left index, then a 180°-rotated copy at bottom-right.
   const block = (x: number, y: number, rot: number) =>
     `<g transform="translate(${x} ${y}) rotate(${rot})">` +
@@ -41,8 +43,8 @@ function cornerIndex(label: string, suit: Suit): string {
   return block(26, 34, 0) + block(CARD_W - 26, CARD_H - 34, 180);
 }
 
-function renderPips(suit: Suit, rank: number, tpl: PipTemplate): string {
-  const inner = suitSymbol(suit);
+function renderPips(suit: Suit, rank: number, tpl: PipTemplate, variantId?: string): string {
+  const inner = suitSymbol(suit, variantId);
   if (rank === 1) {
     return placeSymbol(inner, CARD_W / 2, CARD_H / 2, ACE_SIZE, 0);
   }
@@ -77,17 +79,22 @@ function renderPlaceholder(label: string, color: string, symbol?: string): strin
 /** Render a card to a standalone SVG string. */
 export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
   const tpl = opts.pipTemplate ?? classicTemplate;
+  const vid = (s: Suit): string | undefined => opts.suitVariants?.[s];
   let body = '';
   let corners = '';
 
   switch (card.kind) {
     case 'pip':
-      corners = cornerIndex(cardLabel(card), card.suit);
-      body = renderPips(card.suit, card.rank, tpl);
+      corners = cornerIndex(cardLabel(card), card.suit, vid(card.suit));
+      body = renderPips(card.suit, card.rank, tpl, vid(card.suit));
       break;
     case 'court':
-      corners = cornerIndex(cardLabel(card), card.suit);
-      body = renderPlaceholder(cardLabel(card), suitColor(card.suit), suitSymbol(card.suit));
+      corners = cornerIndex(cardLabel(card), card.suit, vid(card.suit));
+      body = renderPlaceholder(
+        cardLabel(card),
+        suitColor(card.suit),
+        suitSymbol(card.suit, vid(card.suit)),
+      );
       break;
     case 'atout':
       body = renderPlaceholder(String(card.number), '#8a6d1f', undefined);

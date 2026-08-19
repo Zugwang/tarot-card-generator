@@ -85,6 +85,47 @@ export function cardLabel(card: Card): string {
   }
 }
 
+const SUIT_NAMES: Record<Suit, string> = {
+  pique: 'Pique',
+  coeur: 'Cœur',
+  carreau: 'Carreau',
+  trefle: 'Trèfle',
+};
+
+const PIP_NAMES: Record<number, string> = {
+  1: 'As',
+  2: 'Deux',
+  3: 'Trois',
+  4: 'Quatre',
+  5: 'Cinq',
+  6: 'Six',
+  7: 'Sept',
+  8: 'Huit',
+  9: 'Neuf',
+  10: 'Dix',
+};
+
+const COURT_NAMES: Record<CourtRank, string> = {
+  valet: 'Valet',
+  cavalier: 'Cavalier',
+  dame: 'Dame',
+  roi: 'Roi',
+};
+
+/** Human-readable French name for a card. */
+export function cardName(card: Card): string {
+  switch (card.kind) {
+    case 'pip':
+      return `${PIP_NAMES[card.rank]} de ${SUIT_NAMES[card.suit]}`;
+    case 'court':
+      return `${COURT_NAMES[card.rank]} de ${SUIT_NAMES[card.suit]}`;
+    case 'atout':
+      return `Atout ${card.number}`;
+    case 'excuse':
+      return 'L’Excuse';
+  }
+}
+
 /** Stable unique id for a card (useful as a keyed-list key). */
 export function cardId(card: Card): string {
   switch (card.kind) {

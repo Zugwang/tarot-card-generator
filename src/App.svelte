@@ -1,88 +1,229 @@
 <script lang="ts">
-  import { generateDeck, cardId, DECK_SIZES, type DeckSize } from './lib/model/deck';
-  import { renderCardSVG } from './lib/render/card';
+  import {
+    generateDeck,
+    cardId,
+    cardName,
+    DECK_SIZES,
+  } from './lib/model/deck';
+  import { editor } from './lib/editor/store.svelte';
+  import CardView from './lib/components/CardView.svelte';
+  import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
 
-  let size = $state<DeckSize>(52);
-  const deck = $derived(generateDeck(size));
+  const deck = $derived(generateDeck(editor.deckSize));
+  const selectedCard = $derived(
+    deck.find((c) => cardId(c) === editor.selectedId) ?? null,
+  );
+
+  function select(id: string) {
+    editor.selectedId = id;
+  }
 </script>
 
-<header>
-  <h1>Tarotier</h1>
-  <p class="tagline">Générateur de jeux de cartes — aperçu du moteur</p>
+<div class="app">
+  <header>
+    <div class="brand">🂡 <strong>Tarotier</strong></div>
 
-  <div class="deck-picker" role="group" aria-label="Type de jeu">
-    {#each DECK_SIZES as d}
-      <button class:active={size === d} onclick={() => (size = d)}>{d}</button>
-    {/each}
-  </div>
-  <p class="count">{deck.length} cartes</p>
-</header>
-
-<main class="mosaic">
-  {#each deck as card (cardId(card))}
-    <div class="card">
-      {@html renderCardSVG(card)}
+    <div class="seg" role="group" aria-label="Type de jeu">
+      {#each DECK_SIZES as d}
+        <button class:active={editor.deckSize === d} onclick={() => (editor.deckSize = d)}>
+          {d}
+        </button>
+      {/each}
     </div>
-  {/each}
-</main>
+
+    <div class="seg" role="group" aria-label="Mode de visualisation">
+      <button class:active={editor.viewMode === 'mosaic'} onclick={() => (editor.viewMode = 'mosaic')}>
+        Mosaïque
+      </button>
+      <button class:active={editor.viewMode === 'strip'} onclick={() => (editor.viewMode = 'strip')}>
+        Bandeau
+      </button>
+    </div>
+
+    <span class="count">{deck.length} cartes</span>
+  </header>
+
+  <div class="body" class:strip={editor.viewMode === 'strip'}>
+    <!-- Left: design controls -->
+    <aside class="rail left">
+      <SuitVariantPicker />
+    </aside>
+
+    <!-- Center: stage -->
+    <main class="stage">
+      {#if editor.viewMode === 'mosaic'}
+        <div class="mosaic">
+          {#each deck as card (cardId(card))}
+            <CardView
+              {card}
+              selected={editor.selectedId === cardId(card)}
+              onselect={() => select(cardId(card))}
+            />
+          {/each}
+        </div>
+      {:else}
+        <div class="preview">
+          {#if selectedCard}
+            <div class="big"><CardView card={selectedCard} /></div>
+            <p class="cardname">{cardName(selectedCard)}</p>
+          {:else}
+            <p class="hint">Sélectionne une carte dans le bandeau →</p>
+          {/if}
+        </div>
+      {/if}
+    </main>
+
+    <!-- Right: thumbnail band (strip) or selection info (mosaic) -->
+    <aside class="rail right">
+      {#if editor.viewMode === 'strip'}
+        <h2>Cartes</h2>
+        <div class="band">
+          {#each deck as card (cardId(card))}
+            <CardView
+              {card}
+              selected={editor.selectedId === cardId(card)}
+              onselect={() => select(cardId(card))}
+            />
+          {/each}
+        </div>
+      {:else}
+        <h2>Sélection</h2>
+        {#if selectedCard}
+          <p class="cardname">{cardName(selectedCard)}</p>
+          <div class="big"><CardView card={selectedCard} /></div>
+        {:else}
+          <p class="hint">Clique une carte pour la sélectionner.</p>
+        {/if}
+      {/if}
+    </aside>
+  </div>
+</div>
 
 <style>
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100svh;
+  }
+
   header {
-    text-align: center;
-    padding: 2rem 1rem 1rem;
-  }
-  h1 {
-    margin: 0;
-    font-size: 2.4rem;
-    letter-spacing: 0.02em;
-  }
-  .tagline {
-    opacity: 0.7;
-    margin: 0.3rem 0 1.2rem;
-  }
-  .deck-picker {
-    display: inline-flex;
-    gap: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
     flex-wrap: wrap;
-    justify-content: center;
   }
-  .deck-picker button {
-    font: inherit;
-    font-variant-numeric: tabular-nums;
-    padding: 0.45rem 0.9rem;
-    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-    border-radius: 0.5rem;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .deck-picker button:hover {
-    border-color: var(--accent);
-  }
-  .deck-picker button.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
+  .brand {
+    font-size: 1.2rem;
   }
   .count {
+    margin-left: auto;
     opacity: 0.6;
-    font-size: 0.9rem;
-    margin: 0.7rem 0 0;
+    font-size: 0.85rem;
   }
+
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .seg button {
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    padding: 0.35rem 0.7rem;
+    border: none;
+    border-left: 1px solid var(--border);
+    background: var(--panel);
+    color: inherit;
+    cursor: pointer;
+  }
+  .seg button:first-child {
+    border-left: none;
+  }
+  .seg button.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: 240px 1fr 210px;
+    min-height: 0;
+  }
+
+  .rail {
+    overflow: auto;
+    padding: 1rem;
+    background: var(--panel);
+  }
+  .rail.left {
+    border-right: 1px solid var(--border);
+  }
+  .rail.right {
+    border-left: 1px solid var(--border);
+  }
+  .rail h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.6;
+    margin: 0 0 0.8rem;
+  }
+
+  .stage {
+    overflow: auto;
+    min-width: 0;
+  }
+
   .mosaic {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
     gap: 0.9rem;
-    max-width: 1200px;
-    margin: 1.5rem auto;
-    padding: 0 1rem 3rem;
+    padding: 1.2rem;
   }
-  .card :global(svg) {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+
+  .preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+  .preview .big {
+    width: min(340px, 60vh);
+  }
+
+  .band {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .cardname {
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+  }
+  .hint {
+    opacity: 0.6;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  @media (max-width: 780px) {
+    .body,
+    .body.strip {
+      grid-template-columns: 1fr;
+      grid-auto-rows: min-content;
+    }
+    .rail {
+      border: none;
+      border-bottom: 1px solid var(--border);
+    }
   }
 </style>
