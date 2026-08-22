@@ -5,7 +5,7 @@
 import { downloadBlob } from './download';
 
 /** Fetch every same-origin/http image ref in the SVG and inline it as data-URL. */
-async function inlineImages(svg: string): Promise<string> {
+export async function inlineImages(svg: string): Promise<string> {
   const urls = new Set<string>();
   for (const m of svg.matchAll(/(?:xlink:href|href)="([^"]+)"/g)) {
     const u = m[1];
@@ -29,7 +29,7 @@ async function inlineImages(svg: string): Promise<string> {
   return out;
 }
 
-function svgSize(svg: string): { w: number; h: number } {
+export function svgSize(svg: string): { w: number; h: number } {
   const w = Number(svg.match(/width="(\d+(?:\.\d+)?)"/)?.[1] ?? 250);
   const h = Number(svg.match(/height="(\d+(?:\.\d+)?)"/)?.[1] ?? 350);
   return { w, h };

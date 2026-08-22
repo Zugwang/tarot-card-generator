@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Card, cardId, cardName, SUITS, type Suit } from '../model/deck';
   import { suitColor, suitSymbol } from '../render/suits';
-  import { editor, ensureFree } from '../editor/store.svelte';
+  import { editor, ensureFree, reorderLayer, duplicateLayer } from '../editor/store.svelte';
   import { newSuitLayer, newTextLayer, newImageLayer, type FreeLayer } from '../editor/free';
 
   let { card }: { card: Card } = $props();
@@ -91,6 +91,11 @@
     <label class="slider">Rotation <span class="val">{Math.round(selected.rot)}°</span>
       <input type="range" min="-180" max="180" step="1" bind:value={selected.rot} />
     </label>
+    <div class="opts zorder">
+      <button class="opt" title="Reculer" onclick={() => reorderLayer(id, selected.id, -1)}>↓ Reculer</button>
+      <button class="opt" title="Avancer" onclick={() => reorderLayer(id, selected.id, 1)}>↑ Avancer</button>
+      <button class="opt" onclick={() => duplicateLayer(id, selected.id)}>⧉ Dupliquer</button>
+    </div>
     <button class="opt danger" onclick={() => del(selected.id)}>Supprimer le calque</button>
   </section>
 {/if}
@@ -206,6 +211,9 @@
   }
   .opt.file input {
     display: none;
+  }
+  .zorder {
+    margin-top: 0.7rem;
   }
   .opt.danger {
     margin-top: 0.8rem;

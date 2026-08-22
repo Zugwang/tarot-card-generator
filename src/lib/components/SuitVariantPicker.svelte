@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SUITS, type Suit } from '../model/deck';
-  import { SUIT_VARIANTS, suitColor, suitSymbol } from '../render/suits';
+  import { SUIT_VARIANTS, suitSymbol } from '../render/suits';
   import { editor, setSuitVariant, setCustomSuitImage } from '../editor/store.svelte';
 
   const SUIT_LABELS: Record<Suit, string> = {
@@ -31,7 +31,10 @@
   <h2>Enseignes</h2>
   {#each SUITS as suit}
     <div class="suit">
-      <span class="suit-name">{SUIT_LABELS[suit]}</span>
+      <span class="suit-name">
+        {SUIT_LABELS[suit]}
+        <input class="suitcolor" type="color" bind:value={editor.suitColors[suit]} title="Couleur de l'enseigne" aria-label="Couleur {SUIT_LABELS[suit]}" />
+      </span>
       <div class="variants" role="group" aria-label={SUIT_LABELS[suit]}>
         {#each SUIT_VARIANTS[suit] as v}
           <button
@@ -42,7 +45,7 @@
             onclick={() => pickVariant(suit, v.id)}
           >
             <svg viewBox="0 0 100 100" aria-hidden="true">
-              {@html suitSymbol(suit, v.id, suitColor(suit))}
+              {@html suitSymbol(suit, v.id, editor.suitColors[suit])}
             </svg>
           </button>
         {/each}
@@ -81,8 +84,19 @@
   .suit-name {
     font-size: 0.85rem;
     font-weight: 600;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 0.35rem;
+  }
+  .suitcolor {
+    width: 26px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
   }
   .variants {
     display: flex;

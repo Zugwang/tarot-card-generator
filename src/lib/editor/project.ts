@@ -12,10 +12,12 @@ const KEYS = [
   'viewMode',
   'format',
   'suitVariants',
+  'suitColors',
   'customSuitImages',
   'pipSize',
   'pipTemplateId',
   'courtStyle',
+  'illustrationFit',
   'back',
   'freeCards',
 ] as const;

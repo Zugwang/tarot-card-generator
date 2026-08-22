@@ -32,4 +32,9 @@ const freeLayers = [
 write('free-overlay', renderCardSVG(pip5, { freeCard: { hideBase: false, layers: freeLayers } }));
 write('free-blank', renderCardSVG(pip5, { freeCard: { hideBase: true, layers: freeLayers } }));
 
+// 6. refinements: image fit (meet vs slice) + suit recolor
+write('fit-meet', renderCardSVG(dame, { courtStyle: 'marseille', imageFit: 'meet' }));
+write('fit-slice', renderCardSVG(dame, { courtStyle: 'marseille', imageFit: 'slice' }));
+write('recolor', renderCardSVG({ kind: 'pip', suit: 'pique', rank: 7 }, { suitColors: { pique: '#0e7c7b' } }));
+
 console.log('QA svgs written to', dir);

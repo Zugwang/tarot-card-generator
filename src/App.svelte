@@ -10,6 +10,7 @@
   import { PIP_TEMPLATES, pipTemplate } from './lib/render/pipLayouts';
   import { BACK_TEMPLATES, renderBackSVG } from './lib/render/back';
   import { exportPng, exportSheetPng } from './lib/export/png';
+  import { exportSvg, exportSheetSvg } from './lib/export/svg';
   import { saveProject, loadProjectFromFile } from './lib/editor/project';
 
   const COURT_STYLES = [
@@ -83,6 +84,19 @@
       ),
     );
   const exportBack = () => run('Export dos…', () => exportPng(backSvg, 'tarotier-dos.png'));
+
+  const exportCardSvg = () =>
+    selectedCard &&
+    run('Export SVG…', () => exportSvg(renderCardSVG(selectedCard, cardOpts()), `${cardId(selectedCard)}.svg`));
+  const exportSheetSvgFn = () =>
+    run('Export planche SVG…', () =>
+      exportSheetSvg(
+        deck.map((c) => renderCardSVG(c, cardOpts())),
+        editor.deckSize >= 78 ? 14 : 13,
+        `tarotier-${editor.deckSize}.svg`,
+      ),
+    );
+  const exportBackSvg = () => run('Export dos SVG…', () => exportSvg(backSvg, 'tarotier-dos.svg'));
 
   function onLoadFile(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -189,10 +203,20 @@
         </section>
 
         <section class="ctl">
-          <h2>Export PNG</h2>
+          <h2>Cadrage illustrations</h2>
           <div class="opts">
-            <button class="opt" onclick={exportCard} disabled={!selectedCard || !!busy}>Carte</button>
-            <button class="opt" onclick={exportSheet} disabled={!!busy}>Planche</button>
+            <button class="opt" class:active={editor.illustrationFit === 'meet'} onclick={() => (editor.illustrationFit = 'meet')}>Entier</button>
+            <button class="opt" class:active={editor.illustrationFit === 'slice'} onclick={() => (editor.illustrationFit = 'slice')}>Rempli</button>
+          </div>
+        </section>
+
+        <section class="ctl">
+          <h2>Export</h2>
+          <div class="opts">
+            <button class="opt" onclick={exportCard} disabled={!selectedCard || !!busy}>PNG carte</button>
+            <button class="opt" onclick={exportSheet} disabled={!!busy}>PNG planche</button>
+            <button class="opt" onclick={exportCardSvg} disabled={!selectedCard || !!busy}>SVG carte</button>
+            <button class="opt" onclick={exportSheetSvgFn} disabled={!!busy}>SVG planche</button>
           </div>
         </section>
       {:else if editor.tab === 'dos'}
@@ -221,17 +245,19 @@
           </div>
         </section>
         <section class="ctl">
-          <h2>Export PNG</h2>
+          <h2>Export</h2>
           <div class="opts">
-            <button class="opt" onclick={exportBack} disabled={!!busy}>Exporter le dos</button>
+            <button class="opt" onclick={exportBack} disabled={!!busy}>PNG dos</button>
+            <button class="opt" onclick={exportBackSvg} disabled={!!busy}>SVG dos</button>
           </div>
         </section>
       {:else if selectedCard}
         <FreeTools card={selectedCard} />
         <section class="ctl">
-          <h2>Export PNG</h2>
+          <h2>Export</h2>
           <div class="opts">
-            <button class="opt" onclick={exportCard} disabled={!!busy}>Exporter la carte</button>
+            <button class="opt" onclick={exportCard} disabled={!!busy}>PNG carte</button>
+            <button class="opt" onclick={exportCardSvg} disabled={!!busy}>SVG carte</button>
           </div>
         </section>
       {:else}

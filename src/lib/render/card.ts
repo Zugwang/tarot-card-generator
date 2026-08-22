@@ -31,8 +31,12 @@ export interface RenderOptions {
   pipTemplate?: PipTemplate;
   /** Chosen enseigne variant id per suit (falls back to each suit's default). */
   suitVariants?: Partial<Record<Suit, string>>;
+  /** Per-suit symbol color override. */
+  suitColors?: Partial<Record<Suit, string>>;
   /** Data-URL PNG overriding a suit's symbol (from user upload). */
   customSuitImages?: Partial<Record<Suit, string | null>>;
+  /** How illustration images fit the card frame. */
+  imageFit?: 'meet' | 'slice';
   /** Suit-symbol size in card units for pip cards (default {@link PIP_SIZE}). */
   pipSize?: number;
   /** Which court-illustration set to use. */
@@ -73,8 +77,13 @@ function pipArea(h: number) {
   return { x: 48, y: 0.15 * h, w: CARD_W - 96, h: 0.7 * h };
 }
 
+/** Effective color of a suit's symbol (per-card override or default). */
+function colorFor(suit: Suit, opts: RenderOptions): string {
+  return opts.suitColors?.[suit] ?? suitColor(suit);
+}
+
 /** Inner SVG for a suit's symbol: user PNG if present, else the vector variant. */
-function symbolFor(suit: Suit, opts: RenderOptions, color?: string): string {
+function symbolFor(suit: Suit, opts: RenderOptions, color: string = colorFor(suit, opts)): string {
   const custom = opts.customSuitImages?.[suit];
   if (custom) {
     return (
@@ -96,7 +105,7 @@ function placeSymbol(inner: string, cx: number, cy: number, size: number, rot: n
 
 function cornerIndex(card: Card & { suit: Suit }, opts: RenderOptions, h: number): string {
   const label = cardLabel(card);
-  const color = suitColor(card.suit);
+  const color = colorFor(card.suit, opts);
   const mini = symbolFor(card.suit, opts, color);
   const block = (x: number, y: number, rot: number) =>
     `<g transform="translate(${x} ${y}) rotate(${rot})">` +
@@ -128,7 +137,7 @@ function renderPips(
 }
 
 /** Full-frame illustration (e.g. Marseille atout), fitted inside the card. */
-function renderImage(uid: string, href: string, h: number): string {
+function renderImage(uid: string, href: string, h: number, fit: 'meet' | 'slice' = 'meet'): string {
   const m = 7;
   const w = CARD_W - 2 * m;
   const ih = h - 2 * m;
@@ -136,7 +145,7 @@ function renderImage(uid: string, href: string, h: number): string {
   return (
     `<defs><clipPath id="${id}"><rect x="${m}" y="${m}" width="${w}" height="${ih}" rx="11"/></clipPath></defs>` +
     `<image href="${href}" xlink:href="${href}" x="${m}" y="${m}" width="${w}" height="${ih}" ` +
-    `preserveAspectRatio="xMidYMid meet" clip-path="url(#${id})"/>`
+    `preserveAspectRatio="xMidYMid ${fit}" clip-path="url(#${id})"/>`
   );
 }
 
@@ -149,7 +158,7 @@ const COURT_NAMES: Record<CourtRank, string> = {
 
 /** Generated court figure (style "généré"): tinted panel + big enseigne + name band. */
 function renderGeneratedCourt(suit: Suit, rank: CourtRank, opts: RenderOptions, h: number): string {
-  const color = suitColor(suit);
+  const color = colorFor(suit, opts);
   const symbol = symbolFor(suit, opts, color);
   const panelY = 0.1 * h;
   const panelH = 0.8 * h;
@@ -185,7 +194,7 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
     case 'court': {
       const img = courtImage(card.suit, card.rank, opts.courtStyle);
       if (img) {
-        body = renderImage(cardId(card), img, h);
+        body = renderImage(cardId(card), img, h, opts.imageFit);
       } else {
         corners = cornerIndex(card, opts, h);
         body = renderGeneratedCourt(card.suit, card.rank, opts, h);
@@ -193,10 +202,10 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
       break;
     }
     case 'atout':
-      body = renderImage(cardId(card), atoutImage(card.number), h);
+      body = renderImage(cardId(card), atoutImage(card.number), h, opts.imageFit);
       break;
     case 'excuse':
-      body = renderImage(cardId(card), excuseImage(), h);
+      body = renderImage(cardId(card), excuseImage(), h, opts.imageFit);
       break;
   }
 

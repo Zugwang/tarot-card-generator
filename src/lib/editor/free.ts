@@ -42,3 +42,8 @@ export function newTextLayer(): FreeLayer {
 export function newImageLayer(href: string): FreeLayer {
   return { ...base(), type: 'image', href, size: 90 };
 }
+
+/** Copy of a (plain) layer with a fresh id, nudged slightly. */
+export function duplicated(l: FreeLayer): FreeLayer {
+  return { ...l, id: uid(), x: Math.min(1, l.x + 0.04), y: Math.min(1, l.y + 0.04) };
+}

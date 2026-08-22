@@ -9,44 +9,75 @@
   const h = $derived(FORMATS[editor.format].h);
   const free = $derived(editor.freeCards[cardId(card)]);
   const layers = $derived(free?.layers ?? []);
+  const selected = $derived(layers.find((l) => l.id === editor.freeLayerId) ?? null);
   const baseSvg = $derived(renderCardSVG(card, { ...cardRenderOptions(), freeCard: free }));
 
   let svgEl: SVGSVGElement;
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const clampSize = (v: number) => Math.max(8, Math.min(400, v));
 
-  function bounds(l: FreeLayer) {
-    const w = l.type === 'text' ? Math.max(l.size, l.text.length * l.size * 0.55) : l.size;
-    const bh = l.type === 'text' ? l.size * 1.3 : l.size;
-    return { x: l.x * 250 - w / 2, y: l.y * h - bh / 2, w, h: bh };
+  /** Half-extents of a layer's box in card units. */
+  function half(l: FreeLayer) {
+    if (l.type === 'text') return { w: Math.max(l.size, l.text.length * l.size * 0.55) / 2, h: (l.size * 1.3) / 2 };
+    return { w: l.size / 2, h: l.size / 2 };
   }
-
   function frac(e: PointerEvent) {
     const r = svgEl.getBoundingClientRect();
     return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
   }
-
-  let drag: { id: string; ox: number; oy: number; sx: number; sy: number } | null = null;
-  const clamp = (v: number) => Math.max(0, Math.min(1, v));
-
-  function down(e: PointerEvent, l: FreeLayer) {
-    e.stopPropagation();
-    editor.freeLayerId = l.id;
+  function cardPt(e: PointerEvent) {
     const f = frac(e);
-    drag = { id: l.id, ox: l.x, oy: l.y, sx: f.x, sy: f.y };
+    return { x: f.x * 250, y: f.y * h };
+  }
+
+  type Drag =
+    | { mode: 'move'; id: string; ox: number; oy: number; sx: number; sy: number }
+    | { mode: 'resize'; id: string; origSize: number; startDist: number }
+    | { mode: 'rotate'; id: string };
+  let drag: Drag | null = null;
+
+  function begin(d: Drag, id: string) {
+    editor.freeLayerId = id;
+    drag = d;
     window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+    window.addEventListener('pointerup', end);
+  }
+  function startMove(e: PointerEvent, l: FreeLayer) {
+    e.stopPropagation();
+    const f = frac(e);
+    begin({ mode: 'move', id: l.id, ox: l.x, oy: l.y, sx: f.x, sy: f.y }, l.id);
+  }
+  function startResize(e: PointerEvent, l: FreeLayer) {
+    e.stopPropagation();
+    const c = cardPt(e);
+    const d = Math.hypot(c.x - l.x * 250, c.y - l.y * h) || 1;
+    begin({ mode: 'resize', id: l.id, origSize: l.size, startDist: d }, l.id);
+  }
+  function startRotate(e: PointerEvent, l: FreeLayer) {
+    e.stopPropagation();
+    begin({ mode: 'rotate', id: l.id }, l.id);
   }
   function move(e: PointerEvent) {
     if (!drag) return;
     const l = layers.find((x) => x.id === drag!.id);
     if (!l) return;
-    const f = frac(e);
-    l.x = clamp(drag.ox + (f.x - drag.sx));
-    l.y = clamp(drag.oy + (f.y - drag.sy));
+    if (drag.mode === 'move') {
+      const f = frac(e);
+      l.x = clamp01(drag.ox + (f.x - drag.sx));
+      l.y = clamp01(drag.oy + (f.y - drag.sy));
+    } else if (drag.mode === 'resize') {
+      const c = cardPt(e);
+      const d = Math.hypot(c.x - l.x * 250, c.y - l.y * h);
+      l.size = clampSize(drag.origSize * (d / drag.startDist));
+    } else {
+      const c = cardPt(e);
+      l.rot = Math.round((Math.atan2(c.y - l.y * h, c.x - l.x * 250) * 180) / Math.PI + 90);
+    }
   }
-  function up() {
+  function end() {
     drag = null;
     window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointerup', end);
   }
 </script>
 
@@ -60,25 +91,70 @@
     role="presentation"
   >
     {#each layers as l (l.id)}
-      {@const b = bounds(l)}
+      {@const b = half(l)}
       <rect
-        x={b.x}
-        y={b.y}
-        width={b.w}
-        height={b.h}
+        x={l.x * 250 - b.w}
+        y={l.y * h - b.h}
+        width={b.w * 2}
+        height={b.h * 2}
         transform="rotate({l.rot} {l.x * 250} {l.y * h})"
         fill="transparent"
-        stroke={editor.freeLayerId === l.id ? 'var(--accent)' : 'transparent'}
-        stroke-width="2"
-        stroke-dasharray="4 3"
-        vector-effect="non-scaling-stroke"
         class="handle"
         role="button"
         aria-label="Déplacer le calque"
         tabindex="-1"
-        onpointerdown={(e) => down(e, l)}
+        onpointerdown={(e) => startMove(e, l)}
       />
     {/each}
+
+    {#if selected}
+      {@const b = half(selected)}
+      {@const cx = selected.x * 250}
+      {@const cy = selected.y * h}
+      <g transform="rotate({selected.rot} {cx} {cy})" pointer-events="all">
+        <rect
+          x={cx - b.w}
+          y={cy - b.h}
+          width={b.w * 2}
+          height={b.h * 2}
+          fill="none"
+          stroke="var(--accent)"
+          stroke-width="1.5"
+          stroke-dasharray="4 3"
+          vector-effect="non-scaling-stroke"
+          pointer-events="none"
+        />
+        <!-- rotation handle -->
+        <line x1={cx} y1={cy - b.h} x2={cx} y2={cy - b.h - 20} stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" pointer-events="none" />
+        <circle
+          cx={cx}
+          cy={cy - b.h - 20}
+          r="7"
+          fill="var(--accent)"
+          class="rot"
+          role="button"
+          aria-label="Pivoter"
+          tabindex="-1"
+          onpointerdown={(e) => startRotate(e, selected)}
+        />
+        <!-- resize handle (bottom-right) -->
+        <rect
+          x={cx + b.w - 6}
+          y={cy + b.h - 6}
+          width="12"
+          height="12"
+          rx="2"
+          fill="#fff"
+          stroke="var(--accent)"
+          stroke-width="1.5"
+          class="resize"
+          role="button"
+          aria-label="Redimensionner"
+          tabindex="-1"
+          onpointerdown={(e) => startResize(e, selected)}
+        />
+      </g>
+    {/if}
   </svg>
 </div>
 
@@ -104,5 +180,11 @@
   }
   .handle {
     cursor: move;
+  }
+  .rot {
+    cursor: grab;
+  }
+  .resize {
+    cursor: nwse-resize;
   }
 </style>
