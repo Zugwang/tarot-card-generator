@@ -27,12 +27,22 @@ Statut au 2026-08-22.
       la souris, propriétés (taille/rotation/couleur), masquage du fond ;
       inclus dans l'export PNG et le JSON
 
+## Fait (suite 2)
+
+- [x] Enseignes du tarot (épée/coupe/denier/bâton) comme variantes
+- [x] Image de site (bannière + soleil du mode jour)
+- [x] Mode libre : poignées resize/rotation, z-order (avancer/reculer), duplication
+- [x] Export SVG sans perte (carte/dos) + planche SVG
+- [x] Recadrage des illustrations (entier/rempli) ; recoloration par enseigne
+- [x] Doc d'architecture (ARCHITECTURE.md)
+
 ## Idées / raffinements
 
-- [ ] Mode libre : calques aussi sur le **dos** ; poignées de redim/rotation au canvas ;
-      z-order (avancer/reculer) ; snap ; duplication de calque.
-- [ ] Export : **ZIP** de toutes les cartes en PNG séparés (dépend de JSZip) ; export SVG.
-- [ ] Figures Marseille : recadrage (bandes blanches latérales dues au ratio).
-- [ ] Plus de variantes d'enseignes ; recoloration par enseigne.
+- [ ] Refactor Document Model (en douceur) : unifier cartes générées + calques
+      en une liste d'`Element` (cf. ARCHITECTURE.md §6).
+- [ ] Mode libre : calques aussi sur le **dos** ; snap/guides ; multi-sélection ;
+      copier/coller.
+- [ ] Export : **ZIP** de toutes les cartes en PNG/SVG séparés (dépend de JSZip).
 - [ ] Dos : motif à partir de l'enseigne choisie ; plus de templates.
 - [ ] Atouts : second style (Grimaud/Conver) sélectionnable.
+- [ ] Impression (plus tard) : dimensions physiques, bleed, coupe, recto-verso, PDF.
