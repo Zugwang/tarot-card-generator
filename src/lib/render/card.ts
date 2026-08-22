@@ -5,7 +5,7 @@
 // Geometry: width is fixed (CARD_W); only height varies by format, so pip size
 // and corner indices stay consistent across formats.
 
-import { type Card, type Suit, cardLabel, cardId } from '../model/deck';
+import { type Card, type Suit, type CourtRank, cardLabel, cardId } from '../model/deck';
 import { suitColor, suitSymbol } from './suits';
 import { classicTemplate, type PipTemplate } from './pipLayouts';
 import { atoutImage, excuseImage, courtImage } from './illustrations';
@@ -110,14 +110,28 @@ function renderImage(uid: string, href: string, h: number): string {
   );
 }
 
-/** Placeholder for cards without an illustration (courts, style "généré"). */
-function renderPlaceholder(label: string, color: string, symbol: string, h: number): string {
+const COURT_NAMES: Record<CourtRank, string> = {
+  valet: 'Valet',
+  cavalier: 'Cavalier',
+  dame: 'Dame',
+  roi: 'Roi',
+};
+
+/** Generated court figure (style "généré"): tinted panel + big enseigne + name band. */
+function renderGeneratedCourt(suit: Suit, rank: CourtRank, opts: RenderOptions, h: number): string {
+  const color = suitColor(suit);
+  const symbol = symbolFor(suit, opts, color);
+  const panelY = 0.1 * h;
+  const panelH = 0.8 * h;
+  const bandH = 0.12 * h;
+  const bandY = panelY + panelH - bandH;
   return (
-    `<rect x="34" y="${0.126 * h}" width="${CARD_W - 68}" height="${0.75 * h}" rx="10" ` +
-    `fill="none" stroke="${color}" stroke-width="2" stroke-dasharray="5 5" opacity="0.5"/>` +
-    `<g transform="translate(${CARD_W / 2} ${h / 2 - 10}) scale(1.1) translate(-50 -50)">${symbol}</g>` +
-    `<text x="${CARD_W / 2}" y="${h / 2 + 70}" text-anchor="middle" ` +
-    `font-family="Georgia, serif" font-size="40" font-weight="700" fill="${color}">${label}</text>`
+    `<rect x="22" y="${panelY}" width="${CARD_W - 44}" height="${panelH}" rx="14" ` +
+    `fill="${color}14" stroke="${color}" stroke-width="2"/>` +
+    `<g transform="translate(${CARD_W / 2} ${panelY + (panelH - bandH) / 2}) scale(1.15) translate(-50 -50)">${symbol}</g>` +
+    `<rect x="22" y="${bandY}" width="${CARD_W - 44}" height="${bandH}" rx="0" fill="${color}"/>` +
+    `<text x="${CARD_W / 2}" y="${bandY + bandH / 2}" text-anchor="middle" dominant-baseline="central" ` +
+    `font-family="Georgia, serif" font-size="26" font-weight="700" fill="#fff">${COURT_NAMES[rank]}</text>`
   );
 }
 
@@ -140,7 +154,7 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
         body = renderImage(cardId(card), img, h);
       } else {
         corners = cornerIndex(card, opts, h);
-        body = renderPlaceholder(cardLabel(card), suitColor(card.suit), symbolFor(card.suit, opts), h);
+        body = renderGeneratedCourt(card.suit, card.rank, opts, h);
       }
       break;
     }

@@ -1,46 +1,6 @@
-# Tarotier — features à intégrer
+# Tarotier — features
 
-Statut au 2026-08-22. « Moteur ✅ » = logique de rendu prête, il ne manque que
-le câblage UI (store + contrôle + passage des options à `CardView`).
-
-## En cours (moteur prêt, UI manquante)
-
-- [ ] **Format de carte** (carré / standard / tarot allongé)
-  - Moteur ✅ : `FORMATS` + option `height` dans `renderCardSVG`.
-  - Reste : `editor.format` dans le store, sélecteur dans l'UI, passer `height` à `CardView`.
-
-- [ ] **Style des figures A/B/C** + sélecteur
-  - Images ✅ : `public/art/courts/grimaud/` (16, trad 1898) et
-    `public/art/courts/marseille/` (16, Marseille single-cards). Moteur ✅ :
-    `courtImage(suit, rank, style)` + option `courtStyle`.
-  - Reste : style **C « généré »** (dessin propre au lieu du placeholder pointillé) ;
-    `editor.courtStyle` + sélecteur ; passer `courtStyle` à `CardView`.
-
-- [ ] **PNG custom par enseigne**
-  - Moteur ✅ : option `customSuitImages` (data-URL) dans `renderCardSVG`.
-  - Reste : bouton « charger un PNG » par enseigne (FileReader → data-URL),
-    `editor.customSuitImages` dans le store, passer l'option à `CardView`.
-
-## À faire (pas commencé)
-
-- [ ] **Templates de positionnement des pips** supplémentaires
-  - Ajouter : circulaire, espacé, en grille, en diagonale… + sélecteur `editor.pipTemplateId`.
-  - Fichier : `src/lib/render/pipLayouts.ts` (déjà structuré pour ça).
-
-- [ ] **Flèches préc./suiv. en mode Bandeau**
-  - Boutons ‹ › qui déplacent `editor.selectedId` dans l'ordre du deck (+ clavier ←/→).
-
-- [ ] **Onglet « Dos de carte »**
-  - Nouvel onglet (Cartes / Dos). Templates de dos (motifs SVG procéduraux :
-    uni, treillis, pois, bordure ornementale…) + couleur. Rendu SVG dédié.
-
-- [ ] **Export PNG** (par carte / planche) — sérialiser le SVG → canvas → `toBlob`.
-  Les images doivent être inlinées en data-URL (le rendu data-URL est déjà validé).
-
-- [ ] **Sauvegarde/chargement projet JSON** — sérialiser `editor` (déjà plat/sérialisable).
-
-- [ ] **Mode libre** — débrider le placement (déplacer/ajouter/retirer symboles,
-  texte, image), éditer n'importe quelle carte et le dos hors contraintes.
+Statut au 2026-08-22.
 
 ## Fait
 
@@ -50,4 +10,26 @@ le câblage UI (store + contrôle + passage des options à `CardView`).
 - [x] Variantes d'enseignes (3 chacune) + sélecteur
 - [x] Réglage taille des enseignes (slider px)
 - [x] Atouts Tarot de Marseille (Dodal, PD)
-- [x] Mode nuit (bascule thème)
+- [x] Mode nuit (bascule thème + persistance)
+- [x] **Format de carte** : carré / standard / tarot allongé
+- [x] **Style des figures A/B/C** + sélecteur : Marseille (single-cards),
+      Trad 1898 (Grimaud), Généré (panneau + enseigne + bandeau)
+- [x] **PNG custom par enseigne** (upload → data-URL, remplace le symbole)
+- [x] **Templates de positionnement** : classique, espacé, circulaire, grille, diagonale
+- [x] **Flèches préc./suiv.** en mode Bandeau (+ clavier ←/→)
+- [x] **Onglet Dos de carte** : motifs (uni, quadrillé, losanges, pois, ornement) + couleur
+
+## À faire
+
+- [ ] **Export PNG** (par carte / planche) — sérialiser le SVG → canvas → `toBlob`.
+      Inliner les images en data-URL (rendu data-URL déjà validé). Le dos aussi.
+- [ ] **Sauvegarde / chargement projet JSON** — sérialiser `editor` (déjà plat).
+- [ ] **Mode libre** — débrider le placement (déplacer / ajouter / retirer
+      symboles, texte, image), éditer n'importe quelle carte et le dos hors contraintes.
+
+## Idées / raffinements
+
+- [ ] Figures Marseille : recadrage (bandes blanches latérales dues au ratio).
+- [ ] Plus de variantes d'enseignes ; recoloration par enseigne.
+- [ ] Dos : motif à partir de l'enseigne choisie ; plus de templates.
+- [ ] Atouts : second style (Grimaud/Conver) sélectionnable.

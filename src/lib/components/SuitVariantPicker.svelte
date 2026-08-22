@@ -1,7 +1,7 @@
 <script lang="ts">
   import { SUITS, type Suit } from '../model/deck';
   import { SUIT_VARIANTS, suitColor, suitSymbol } from '../render/suits';
-  import { editor, setSuitVariant } from '../editor/store.svelte';
+  import { editor, setSuitVariant, setCustomSuitImage } from '../editor/store.svelte';
 
   const SUIT_LABELS: Record<Suit, string> = {
     pique: 'Pique',
@@ -9,6 +9,22 @@
     carreau: 'Carreau',
     trefle: 'Trèfle',
   };
+
+  function pickVariant(suit: Suit, variantId: string) {
+    setCustomSuitImage(suit, null); // vector variant overrides any uploaded PNG
+    setSuitVariant(suit, variantId);
+  }
+
+  function onFile(suit: Suit, e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setCustomSuitImage(suit, reader.result as string);
+      reader.readAsDataURL(file);
+    }
+    input.value = '';
+  }
 </script>
 
 <div class="picker">
@@ -20,17 +36,32 @@
         {#each SUIT_VARIANTS[suit] as v}
           <button
             class="swatch"
-            class:active={editor.suitVariants[suit] === v.id}
+            class:active={!editor.customSuitImages[suit] && editor.suitVariants[suit] === v.id}
             title={v.label}
             aria-label="{SUIT_LABELS[suit]} — {v.label}"
-            aria-pressed={editor.suitVariants[suit] === v.id}
-            onclick={() => setSuitVariant(suit, v.id)}
+            onclick={() => pickVariant(suit, v.id)}
           >
             <svg viewBox="0 0 100 100" aria-hidden="true">
               {@html suitSymbol(suit, v.id, suitColor(suit))}
             </svg>
           </button>
         {/each}
+
+        {#if editor.customSuitImages[suit]}
+          <button
+            class="swatch active custom"
+            title="PNG chargé — cliquer pour retirer"
+            aria-label="{SUIT_LABELS[suit]} — PNG personnalisé (retirer)"
+            onclick={() => setCustomSuitImage(suit, null)}
+          >
+            <img src={editor.customSuitImages[suit]} alt="" />
+          </button>
+        {/if}
+
+        <label class="swatch upload" title="Charger un PNG">
+          <input type="file" accept="image/png,image/*" onchange={(e) => onFile(suit, e)} />
+          <span>＋</span>
+        </label>
       </div>
     </div>
   {/each}
@@ -56,16 +87,19 @@
   .variants {
     display: flex;
     gap: 0.4rem;
+    flex-wrap: wrap;
   }
   .swatch {
-    flex: 1;
-    aspect-ratio: 1;
+    width: 42px;
+    height: 42px;
     padding: 6px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--panel);
     cursor: pointer;
     transition: border-color 0.1s, transform 0.1s;
+    display: grid;
+    place-items: center;
   }
   .swatch:hover {
     transform: translateY(-1px);
@@ -74,9 +108,21 @@
     border-color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent);
   }
-  .swatch svg {
+  .swatch svg,
+  .swatch img {
     width: 100%;
     height: 100%;
+    object-fit: contain;
     display: block;
+  }
+  .swatch.custom img {
+    border-radius: 4px;
+  }
+  .upload {
+    font-size: 1.2rem;
+    opacity: 0.6;
+  }
+  .upload input {
+    display: none;
   }
 </style>
