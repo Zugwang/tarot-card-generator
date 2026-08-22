@@ -36,13 +36,22 @@ Statut au 2026-08-22.
 - [x] Recadrage des illustrations (entier/rempli) ; recoloration par enseigne
 - [x] Doc d'architecture (ARCHITECTURE.md)
 
+## Fait (suite 3)
+
+- [x] Amorce Document Model : `cardElements()` (générer = émettre des calques) ;
+      auto-décomposition en mode libre
+- [x] Dos traité comme une carte (1re carte) + motif/couleur en fond
+- [x] Format libre (dimensions réglables) + proportions affichées
+- [x] Figures : « blanc » + « poker » (English pattern PD) ; « généré » retiré
+- [x] Taille des enseignes jusqu'à 100
+- [x] Export : toggle Carte/Jeu (PNG/SVG)
+
 ## Idées / raffinements
 
-- [ ] Refactor Document Model (en douceur) : unifier cartes générées + calques
-      en une liste d'`Element` (cf. ARCHITECTURE.md §6).
-- [ ] Mode libre : calques aussi sur le **dos** ; snap/guides ; multi-sélection ;
-      copier/coller.
-- [ ] Export : **ZIP** de toutes les cartes en PNG/SVG séparés (dépend de JSZip).
-- [ ] Dos : motif à partir de l'enseigne choisie ; plus de templates.
+- [ ] Document Model : finir l'unification (renderer 100% élément ; le mode libre
+      édite la même liste que la génération — aujourd'hui décomposition one-shot).
+- [ ] Mode libre : snap/guides ; multi-sélection ; copier/coller ; formes/cadres.
+- [ ] Export : **ZIP** de fichiers séparés (dépend de JSZip).
+- [ ] Dos : motif dérivé de l'enseigne ; plus de motifs.
 - [ ] Atouts : second style (Grimaud/Conver) sélectionnable.
 - [ ] Impression (plus tard) : dimensions physiques, bleed, coupe, recto-verso, PDF.
