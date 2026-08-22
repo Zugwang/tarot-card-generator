@@ -11,6 +11,7 @@ const KEYS = [
   'deckSize',
   'viewMode',
   'format',
+  'customFormat',
   'suitVariants',
   'suitColors',
   'customSuitImages',

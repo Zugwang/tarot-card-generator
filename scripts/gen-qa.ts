@@ -1,8 +1,8 @@
 // Dev-only visual QA of the whole engine. Writes labeled SVGs into dist/ root
 // (so rsvg-convert can load /art images via descendant-relative href).
 import { writeFileSync } from 'node:fs';
-import type { Card } from '../src/lib/model/deck';
-import { renderCardSVG, FORMATS, type FormatId } from '../src/lib/render/card';
+import { type Card, BACK_CARD } from '../src/lib/model/deck';
+import { renderCardSVG, cardElements, FORMATS, type FormatId } from '../src/lib/render/card';
 import { PIP_TEMPLATES } from '../src/lib/render/pipLayouts';
 import { renderBackSVG, BACK_TEMPLATES } from '../src/lib/render/back';
 
@@ -36,5 +36,14 @@ write('free-blank', renderCardSVG(pip5, { freeCard: { hideBase: true, layers: fr
 write('fit-meet', renderCardSVG(dame, { courtStyle: 'marseille', imageFit: 'meet' }));
 write('fit-slice', renderCardSVG(dame, { courtStyle: 'marseille', imageFit: 'slice' }));
 write('recolor', renderCardSVG({ kind: 'pip', suit: 'pique', rank: 7 }, { suitColors: { pique: '#0e7c7b' } }));
+
+// 7. new: back card, poker/blanc courts, explode, custom format
+write('back', renderCardSVG(BACK_CARD, { backConfig: { templateId: 'losanges', color: '#1c4f7a' } }));
+write('court-poker', renderCardSVG(dame, { courtStyle: 'poker' }));
+write('court-blanc', renderCardSVG(dame, { courtStyle: 'blanc' }));
+const pip8: Card = { kind: 'pip', suit: 'coeur', rank: 8 };
+write('normal8', renderCardSVG(pip8));
+write('explode8', renderCardSVG(pip8, { freeCard: { hideBase: true, layers: cardElements(pip8) } }));
+write('fmt-libre', renderCardSVG({ kind: 'pip', suit: 'trefle', rank: 5 }, { width: 300, height: 220 }));
 
 console.log('QA svgs written to', dir);

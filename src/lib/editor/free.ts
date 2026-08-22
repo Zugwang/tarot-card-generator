@@ -26,10 +26,11 @@ export function emptyFreeCard(): FreeCard {
   return { hideBase: false, layers: [] };
 }
 
-const uid = () =>
+export const newLayerId = (): string =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
+const uid = newLayerId;
 
 const base = (): BaseLayer => ({ id: uid(), x: 0.5, y: 0.5, size: 46, rot: 0 });
 

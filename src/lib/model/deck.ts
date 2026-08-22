@@ -17,7 +17,11 @@ export type Card =
   | { kind: 'pip'; suit: Suit; rank: number } // rank 1..10 (1 = As)
   | { kind: 'court'; suit: Suit; rank: CourtRank }
   | { kind: 'atout'; number: number } // 1..21
-  | { kind: 'excuse' };
+  | { kind: 'excuse' }
+  | { kind: 'back' }; // the shared card back, shown as the first card
+
+/** The shared card back, treated as a card (first position). */
+export const BACK_CARD: Card = { kind: 'back' };
 
 interface DeckShape {
   /** Pip ranks present per suit (1 = As). */
@@ -82,6 +86,8 @@ export function cardLabel(card: Card): string {
       return String(card.number);
     case 'excuse':
       return '★';
+    case 'back':
+      return '';
   }
 }
 
@@ -123,6 +129,8 @@ export function cardName(card: Card): string {
       return `Atout ${card.number}`;
     case 'excuse':
       return 'L’Excuse';
+    case 'back':
+      return 'Dos';
   }
 }
 
@@ -137,5 +145,7 @@ export function cardId(card: Card): string {
       return `atout-${card.number}`;
     case 'excuse':
       return 'excuse';
+    case 'back':
+      return 'back';
   }
 }

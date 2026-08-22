@@ -13,7 +13,13 @@ Images récupérées via `Special:FilePath` (redimensionnées à ~500 px de larg
 
 Mapping : `trump 01..21` → atouts 1 à 21 ; `trump Fool` → l'Excuse (Le Mat).
 
-## Figures (Valet / Cavalier / Dame / Roi)
+## Figures poker (`public/art/courts/poker/`)
+
+Set **English pattern** (SVG vectoriel) issu de Wikimedia Commons — catégorie
+« SVG English pattern playing cards ». Motif de cartes anglais du domaine public.
+Valet/Dame/Roi × 4 (pas de Cavalier dans le jeu de 52).
+
+## Figures Marseille / Grimaud (Valet / Cavalier / Dame / Roi)
 
 Pas encore d'illustrations : rendu par un placeholder généré. Aucune source
 Tarot de Marseille propre et complète des 16 figures n'existe sur Wikimedia

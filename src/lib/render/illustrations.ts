@@ -15,18 +15,19 @@ export function excuseImage(): string {
   return '/art/atouts/fool.jpg';
 }
 
-export type CourtStyle = 'grimaud' | 'marseille' | 'genere';
-
-/** Court styles that have image assets available. */
-export const IMAGE_COURT_STYLES: CourtStyle[] = ['grimaud', 'marseille'];
+export type CourtStyle = 'marseille' | 'grimaud' | 'poker' | 'blanc';
 
 /**
  * Image URL for a court card in the given style, or null when the style draws
- * the card without an image ('genere') or the asset is absent.
+ * no image ('blanc' → blank card with index) or the asset is absent.
+ * Poker courts have no Cavalier → falls back to null (blank) for that rank.
  */
 export function courtImage(suit: Suit, rank: CourtRank, style?: string): string | null {
+  if (style === 'poker') {
+    return rank === 'cavalier' ? null : `/art/courts/poker/${suit}-${rank}.svg`;
+  }
   if (style === 'grimaud' || style === 'marseille') {
     return `/art/courts/${style}/${suit}-${rank}.jpg`;
   }
-  return null;
+  return null; // 'blanc' or unknown
 }

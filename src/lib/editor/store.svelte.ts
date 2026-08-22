@@ -2,11 +2,13 @@
 // its fields directly; reads in markup are reactive. Kept plain and
 // serializable so it maps cleanly to the future JSON project save/load.
 
-import { type DeckSize, type Suit, SUITS } from '../model/deck';
+import { type DeckSize, type Suit, type Card, SUITS, cardId } from '../model/deck';
 import { defaultVariantId, SUIT_COLORS } from '../render/suits';
-import { FORMATS, type FormatId, type RenderOptions } from '../render/card';
+import { FORMATS, type FormatId, type RenderOptions, cardElements } from '../render/card';
 import { pipTemplate } from '../render/pipLayouts';
 import { type FreeCard, emptyFreeCard, duplicated } from './free';
+
+export type FormatChoice = FormatId | 'libre';
 
 export type ViewMode = 'mosaic' | 'strip';
 export type Tab = 'cartes' | 'dos' | 'libre';
@@ -23,7 +25,9 @@ export const editor = $state({
   tab: 'cartes' as Tab,
   deckSize: 52 as DeckSize,
   viewMode: 'mosaic' as ViewMode,
-  format: 'standard' as FormatId,
+  format: 'standard' as FormatChoice,
+  /** Custom dimensions used when format === 'libre'. */
+  customFormat: { w: 250, h: 350 },
   suitVariants: defaultVariants(),
   /** Per-suit symbol color (overrides the default red/black). */
   suitColors: { ...SUIT_COLORS } as Record<Suit, string>,
@@ -72,10 +76,21 @@ export function duplicateLayer(cardId: string, layerId: string): void {
   editor.freeLayerId = copy.id;
 }
 
+/** Effective card dimensions from the current format choice. */
+export function formatWH(): { w: number; h: number } {
+  if (editor.format === 'libre') {
+    return { w: Math.max(60, editor.customFormat.w), h: Math.max(60, editor.customFormat.h) };
+  }
+  const f = FORMATS[editor.format];
+  return { w: f.w, h: f.h };
+}
+
 /** Current render options derived from editor state (without the per-card free layer). */
 export function cardRenderOptions(): RenderOptions {
+  const { w, h } = formatWH();
   return {
-    height: FORMATS[editor.format].h,
+    width: w,
+    height: h,
     pipTemplate: pipTemplate(editor.pipTemplateId),
     suitVariants: editor.suitVariants,
     suitColors: editor.suitColors,
@@ -83,7 +98,19 @@ export function cardRenderOptions(): RenderOptions {
     pipSize: editor.pipSize,
     courtStyle: editor.courtStyle,
     imageFit: editor.illustrationFit,
+    backConfig: editor.back,
   };
+}
+
+/** Auto-decompose a card into free layers on entering free mode (except the back). */
+export function ensureExploded(card: Card): void {
+  const id = cardId(card);
+  if (editor.freeCards[id]) return;
+  if (card.kind === 'back') {
+    editor.freeCards[id] = emptyFreeCard(); // keep motif base, add layers on top
+  } else {
+    editor.freeCards[id] = { hideBase: true, layers: cardElements(card, cardRenderOptions()) };
+  }
 }
 
 export function setSuitVariant(suit: Suit, variantId: string): void {

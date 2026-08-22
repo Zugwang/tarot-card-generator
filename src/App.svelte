@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { generateDeck, cardId, cardName, DECK_SIZES } from './lib/model/deck';
-  import { editor } from './lib/editor/store.svelte';
+  import { generateDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
+  import { editor, cardRenderOptions, ensureExploded } from './lib/editor/store.svelte';
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
   import FreeCanvas from './lib/components/FreeCanvas.svelte';
   import FreeTools from './lib/components/FreeTools.svelte';
   import { renderCardSVG, FORMATS, type FormatId } from './lib/render/card';
-  import { PIP_TEMPLATES, pipTemplate } from './lib/render/pipLayouts';
-  import { BACK_TEMPLATES, renderBackSVG } from './lib/render/back';
+  import { PIP_TEMPLATES } from './lib/render/pipLayouts';
+  import { BACK_TEMPLATES } from './lib/render/back';
   import { exportPng, exportSheetPng } from './lib/export/png';
   import { exportSvg, exportSheetSvg } from './lib/export/svg';
   import { saveProject, loadProjectFromFile } from './lib/editor/project';
@@ -16,51 +16,43 @@
   const COURT_STYLES = [
     { id: 'marseille', label: 'Marseille' },
     { id: 'grimaud', label: 'Trad 1898' },
-    { id: 'genere', label: 'Généré' },
+    { id: 'poker', label: 'Poker' },
+    { id: 'blanc', label: 'Blanc' },
   ];
   const formatIds = Object.keys(FORMATS) as FormatId[];
 
   const deck = $derived(generateDeck(editor.deckSize));
-  const selectedCard = $derived(deck.find((c) => cardId(c) === editor.selectedId) ?? null);
-  const backSvg = $derived(
-    renderBackSVG({
-      height: FORMATS[editor.format].h,
-      templateId: editor.back.templateId,
-      color: editor.back.color,
-    }),
-  );
+  const displayCards = $derived<Card[]>([BACK_CARD, ...deck]);
+  const selectedCard = $derived(displayCards.find((c) => cardId(c) === editor.selectedId) ?? null);
+
+  // Auto-decompose the edited card into layers when entering free mode.
+  $effect(() => {
+    if (editor.tab === 'libre' && selectedCard) ensureExploded(selectedCard);
+  });
+
+  const renderOne = (c: Card) =>
+    renderCardSVG(c, { ...cardRenderOptions(), freeCard: editor.freeCards[cardId(c)] });
 
   function select(id: string) {
     editor.selectedId = id;
     editor.freeLayerId = null;
   }
-
   function step(delta: number) {
-    if (!deck.length) return;
-    let i = deck.findIndex((c) => cardId(c) === editor.selectedId);
+    if (!displayCards.length) return;
+    let i = displayCards.findIndex((c) => cardId(c) === editor.selectedId);
     if (i < 0) i = delta > 0 ? -1 : 0;
-    i = (i + delta + deck.length) % deck.length;
-    editor.selectedId = cardId(deck[i]);
+    i = (i + delta + displayCards.length) % displayCards.length;
+    select(cardId(displayCards[i]));
   }
-
   function onKey(e: KeyboardEvent) {
     if (editor.tab !== 'cartes' || editor.viewMode !== 'strip') return;
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
   }
 
-  function cardOpts() {
-    return {
-      height: FORMATS[editor.format].h,
-      pipTemplate: pipTemplate(editor.pipTemplateId),
-      suitVariants: editor.suitVariants,
-      customSuitImages: editor.customSuitImages,
-      pipSize: editor.pipSize,
-      courtStyle: editor.courtStyle,
-    };
-  }
-
+  // --- export ---
   let busy = $state('');
+  let scope = $state<'carte' | 'jeu'>('carte');
   async function run(label: string, fn: () => Promise<void>) {
     busy = label;
     try {
@@ -71,32 +63,23 @@
       busy = '';
     }
   }
-
-  const exportCard = () =>
-    selectedCard &&
-    run('Export carte…', () => exportPng(renderCardSVG(selectedCard, cardOpts()), `${cardId(selectedCard)}.png`));
-  const exportSheet = () =>
-    run('Export planche…', () =>
-      exportSheetPng(
-        deck.map((c) => renderCardSVG(c, cardOpts())),
-        editor.deckSize >= 78 ? 14 : 13,
-        `tarotier-${editor.deckSize}.png`,
-      ),
-    );
-  const exportBack = () => run('Export dos…', () => exportPng(backSvg, 'tarotier-dos.png'));
-
-  const exportCardSvg = () =>
-    selectedCard &&
-    run('Export SVG…', () => exportSvg(renderCardSVG(selectedCard, cardOpts()), `${cardId(selectedCard)}.svg`));
-  const exportSheetSvgFn = () =>
-    run('Export planche SVG…', () =>
-      exportSheetSvg(
-        deck.map((c) => renderCardSVG(c, cardOpts())),
-        editor.deckSize >= 78 ? 14 : 13,
-        `tarotier-${editor.deckSize}.svg`,
-      ),
-    );
-  const exportBackSvg = () => run('Export dos SVG…', () => exportSvg(backSvg, 'tarotier-dos.svg'));
+  function doExport(fmt: 'png' | 'svg') {
+    const cols = editor.deckSize >= 78 ? 14 : 13;
+    if (scope === 'jeu') {
+      const svgs = displayCards.map(renderOne);
+      run(`Export planche ${fmt.toUpperCase()}…`, () =>
+        fmt === 'png'
+          ? exportSheetPng(svgs, cols, `tarotier-${editor.deckSize}.png`)
+          : exportSheetSvg(svgs, cols, `tarotier-${editor.deckSize}.svg`),
+      );
+    } else if (selectedCard) {
+      const svg = renderOne(selectedCard);
+      const name = cardId(selectedCard);
+      run(`Export ${fmt.toUpperCase()}…`, () =>
+        fmt === 'png' ? exportPng(svg, `${name}.png`) : exportSvg(svg, `${name}.svg`),
+      );
+    }
+  }
 
   function onLoadFile(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -118,39 +101,27 @@
     <div class="seg" role="group" aria-label="Onglet">
       <button class:active={editor.tab === 'cartes'} onclick={() => (editor.tab = 'cartes')}>Cartes</button>
       <button class:active={editor.tab === 'libre'} onclick={() => (editor.tab = 'libre')}>Libre</button>
-      <button class:active={editor.tab === 'dos'} onclick={() => (editor.tab = 'dos')}>Dos</button>
     </div>
 
-    {#if editor.tab !== 'dos'}
-      <div class="seg" role="group" aria-label="Type de jeu">
-        {#each DECK_SIZES as d}
-          <button class:active={editor.deckSize === d} onclick={() => (editor.deckSize = d)}>{d}</button>
-        {/each}
+    <div class="seg" role="group" aria-label="Type de jeu">
+      {#each DECK_SIZES as d}
+        <button class:active={editor.deckSize === d} onclick={() => (editor.deckSize = d)}>{d}</button>
+      {/each}
+    </div>
+    {#if editor.tab === 'cartes'}
+      <div class="seg" role="group" aria-label="Visualisation">
+        <button class:active={editor.viewMode === 'mosaic'} onclick={() => (editor.viewMode = 'mosaic')}>Mosaïque</button>
+        <button class:active={editor.viewMode === 'strip'} onclick={() => (editor.viewMode = 'strip')}>Bandeau</button>
       </div>
-      {#if editor.tab === 'cartes'}
-        <div class="seg" role="group" aria-label="Visualisation">
-          <button class:active={editor.viewMode === 'mosaic'} onclick={() => (editor.viewMode = 'mosaic')}>Mosaïque</button>
-          <button class:active={editor.viewMode === 'strip'} onclick={() => (editor.viewMode = 'strip')}>Bandeau</button>
-        </div>
-      {/if}
-      <span class="count">{deck.length} cartes</span>
     {/if}
+    <span class="count">{deck.length} cartes</span>
 
-    <button
-      class="theme-toggle"
-      onclick={toggleTheme}
-      aria-label={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}
-      title={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}
-    >
-      {#if theme.mode === 'dark'}
-        <img class="sun" src="/marseille-bb.webp" alt="" />
-      {:else}
-        🌙
-      {/if}
+    <button class="theme-toggle" onclick={toggleTheme} aria-label="Thème" title={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}>
+      {#if theme.mode === 'dark'}<img class="sun" src="/marseille-bb.webp" alt="" />{:else}🌙{/if}
     </button>
   </header>
 
-  <div class="body" class:full={editor.tab === 'dos'}>
+  <div class="body">
     <!-- Left: controls -->
     <aside class="rail left">
       <section class="ctl">
@@ -158,6 +129,16 @@
         <div class="opts">
           <button class="opt" onclick={() => saveProject()}>💾 Enregistrer</button>
           <label class="opt file">📂 Ouvrir<input type="file" accept="application/json" onchange={onLoadFile} /></label>
+        </div>
+        <div class="scope">
+          <div class="seg small" role="group" aria-label="Portée export">
+            <button class:active={scope === 'carte'} onclick={() => (scope = 'carte')}>Carte</button>
+            <button class:active={scope === 'jeu'} onclick={() => (scope = 'jeu')}>Jeu</button>
+          </div>
+          <div class="opts">
+            <button class="opt" onclick={() => doExport('png')} disabled={!!busy || (scope === 'carte' && !selectedCard)}>Export PNG</button>
+            <button class="opt" onclick={() => doExport('svg')} disabled={!!busy || (scope === 'carte' && !selectedCard)}>Export SVG</button>
+          </div>
         </div>
       </section>
 
@@ -167,26 +148,31 @@
           <div class="opts">
             {#each formatIds as f}
               <button class="opt" class:active={editor.format === f} onclick={() => (editor.format = f)}>
-                {FORMATS[f].label}
+                {FORMATS[f].label} <span class="ratio">{FORMATS[f].w}×{FORMATS[f].h}</span>
               </button>
             {/each}
+            <button class="opt" class:active={editor.format === 'libre'} onclick={() => (editor.format = 'libre')}>Libre</button>
           </div>
+          {#if editor.format === 'libre'}
+            <div class="dims">
+              <label>L <input type="number" min="60" max="1000" bind:value={editor.customFormat.w} /></label>
+              <label>H <input type="number" min="60" max="1000" bind:value={editor.customFormat.h} /></label>
+            </div>
+          {/if}
         </section>
 
         <SuitVariantPicker />
 
         <section class="ctl">
           <h2>Taille des enseignes <span class="val">{editor.pipSize} px</span></h2>
-          <input type="range" min="18" max="52" step="1" bind:value={editor.pipSize} />
+          <input type="range" min="12" max="100" step="1" bind:value={editor.pipSize} />
         </section>
 
         <section class="ctl">
           <h2>Positionnement</h2>
           <div class="opts">
             {#each PIP_TEMPLATES as t}
-              <button class="opt" class:active={editor.pipTemplateId === t.id} onclick={() => (editor.pipTemplateId = t.id)}>
-                {t.label}
-              </button>
+              <button class="opt" class:active={editor.pipTemplateId === t.id} onclick={() => (editor.pipTemplateId = t.id)}>{t.label}</button>
             {/each}
           </div>
         </section>
@@ -195,9 +181,7 @@
           <h2>Figures</h2>
           <div class="opts">
             {#each COURT_STYLES as s}
-              <button class="opt" class:active={editor.courtStyle === s.id} onclick={() => (editor.courtStyle = s.id)}>
-                {s.label}
-              </button>
+              <button class="opt" class:active={editor.courtStyle === s.id} onclick={() => (editor.courtStyle = s.id)}>{s.label}</button>
             {/each}
           </div>
         </section>
@@ -209,57 +193,19 @@
             <button class="opt" class:active={editor.illustrationFit === 'slice'} onclick={() => (editor.illustrationFit = 'slice')}>Rempli</button>
           </div>
         </section>
-
-        <section class="ctl">
-          <h2>Export</h2>
-          <div class="opts">
-            <button class="opt" onclick={exportCard} disabled={!selectedCard || !!busy}>PNG carte</button>
-            <button class="opt" onclick={exportSheet} disabled={!!busy}>PNG planche</button>
-            <button class="opt" onclick={exportCardSvg} disabled={!selectedCard || !!busy}>SVG carte</button>
-            <button class="opt" onclick={exportSheetSvgFn} disabled={!!busy}>SVG planche</button>
-          </div>
-        </section>
-      {:else if editor.tab === 'dos'}
-        <section class="ctl">
-          <h2>Motif du dos</h2>
-          <div class="opts">
-            {#each BACK_TEMPLATES as b}
-              <button class="opt" class:active={editor.back.templateId === b.id} onclick={() => (editor.back.templateId = b.id)}>
-                {b.label}
-              </button>
-            {/each}
-          </div>
-        </section>
-        <section class="ctl">
-          <h2>Couleur</h2>
-          <input class="color" type="color" bind:value={editor.back.color} />
-        </section>
-        <section class="ctl">
-          <h2>Format</h2>
-          <div class="opts">
-            {#each formatIds as f}
-              <button class="opt" class:active={editor.format === f} onclick={() => (editor.format = f)}>
-                {FORMATS[f].label}
-              </button>
-            {/each}
-          </div>
-        </section>
-        <section class="ctl">
-          <h2>Export</h2>
-          <div class="opts">
-            <button class="opt" onclick={exportBack} disabled={!!busy}>PNG dos</button>
-            <button class="opt" onclick={exportBackSvg} disabled={!!busy}>SVG dos</button>
-          </div>
-        </section>
       {:else if selectedCard}
+        {#if selectedCard.kind === 'back'}
+          <section class="ctl">
+            <h2>Motif du dos</h2>
+            <div class="opts">
+              {#each BACK_TEMPLATES as b}
+                <button class="opt" class:active={editor.back.templateId === b.id} onclick={() => (editor.back.templateId = b.id)}>{b.label}</button>
+              {/each}
+            </div>
+            <label class="row">Couleur <input type="color" bind:value={editor.back.color} /></label>
+          </section>
+        {/if}
         <FreeTools card={selectedCard} />
-        <section class="ctl">
-          <h2>Export</h2>
-          <div class="opts">
-            <button class="opt" onclick={exportCard} disabled={!!busy}>PNG carte</button>
-            <button class="opt" onclick={exportCardSvg} disabled={!!busy}>SVG carte</button>
-          </div>
-        </section>
       {:else}
         <p class="hint">Choisis une carte à éditer dans la liste →</p>
       {/if}
@@ -267,62 +213,52 @@
 
     <!-- Center: stage -->
     <main class="stage">
-      {#if editor.tab === 'dos'}
-        <div class="preview">
-          <div class="big">{@html backSvg}</div>
-        </div>
-      {:else if editor.tab === 'libre'}
+      {#if editor.tab === 'libre'}
         <div class="preview">
           {#if selectedCard}
             <FreeCanvas card={selectedCard} />
-            <p class="hint">Glisse les calques ; ajoute-les depuis le panneau de gauche.</p>
+            <p class="hint">Glisse, redimensionne (coin) et pivote (poignée) les calques.</p>
           {:else}
             <div class="hint">Choisis une carte à éditer →</div>
           {/if}
         </div>
       {:else if editor.viewMode === 'mosaic'}
         <div class="mosaic">
-          {#each deck as card (cardId(card))}
+          {#each displayCards as card (cardId(card))}
             <CardView {card} selected={editor.selectedId === cardId(card)} onselect={() => select(cardId(card))} />
           {/each}
         </div>
       {:else}
         <div class="preview">
           <div class="nav">
-            <button class="arrow" onclick={() => step(-1)} aria-label="Carte précédente">‹</button>
-            {#if selectedCard}
-              <div class="big"><CardView card={selectedCard} /></div>
-            {:else}
-              <div class="hint">Choisis une carte →</div>
-            {/if}
-            <button class="arrow" onclick={() => step(1)} aria-label="Carte suivante">›</button>
+            <button class="arrow" onclick={() => step(-1)} aria-label="Précédente">‹</button>
+            {#if selectedCard}<div class="big"><CardView card={selectedCard} /></div>{:else}<div class="hint">Choisis une carte →</div>{/if}
+            <button class="arrow" onclick={() => step(1)} aria-label="Suivante">›</button>
           </div>
           {#if selectedCard}<p class="cardname">{cardName(selectedCard)}</p>{/if}
         </div>
       {/if}
     </main>
 
-    <!-- Right: card picker (strip / libre) or selection info (mosaic) -->
-    {#if editor.tab !== 'dos'}
-      <aside class="rail right">
-        {#if editor.tab === 'libre' || editor.viewMode === 'strip'}
-          <h2>Cartes</h2>
-          <div class="band">
-            {#each deck as card (cardId(card))}
-              <CardView {card} selected={editor.selectedId === cardId(card)} onselect={() => select(cardId(card))} />
-            {/each}
-          </div>
+    <!-- Right: card picker / selection -->
+    <aside class="rail right">
+      {#if editor.tab === 'libre' || editor.viewMode === 'strip'}
+        <h2>Cartes</h2>
+        <div class="band">
+          {#each displayCards as card (cardId(card))}
+            <CardView {card} selected={editor.selectedId === cardId(card)} onselect={() => select(cardId(card))} />
+          {/each}
+        </div>
+      {:else}
+        <h2>Sélection</h2>
+        {#if selectedCard}
+          <p class="cardname">{cardName(selectedCard)}</p>
+          <div class="big"><CardView card={selectedCard} /></div>
         {:else}
-          <h2>Sélection</h2>
-          {#if selectedCard}
-            <p class="cardname">{cardName(selectedCard)}</p>
-            <div class="big"><CardView card={selectedCard} /></div>
-          {:else}
-            <p class="hint">Clique une carte.</p>
-          {/if}
+          <p class="hint">Clique une carte.</p>
         {/if}
-      </aside>
-    {/if}
+      {/if}
+    </aside>
   </div>
 </div>
 
@@ -352,12 +288,6 @@
     width: 30px;
     object-fit: contain;
   }
-  .theme-toggle .sun {
-    height: 20px;
-    width: 20px;
-    object-fit: contain;
-    display: block;
-  }
   .count {
     opacity: 0.6;
     font-size: 0.85rem;
@@ -372,6 +302,12 @@
     background: var(--panel);
     color: inherit;
     cursor: pointer;
+  }
+  .theme-toggle .sun {
+    height: 20px;
+    width: 20px;
+    object-fit: contain;
+    display: block;
   }
   .theme-toggle:hover {
     border-color: var(--accent);
@@ -400,16 +336,16 @@
     background: var(--accent);
     color: #fff;
   }
+  .seg.small button {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+  }
 
   .body {
     display: grid;
-    grid-template-columns: 240px 1fr 210px;
+    grid-template-columns: 250px 1fr 210px;
     min-height: 0;
   }
-  .body.full {
-    grid-template-columns: 240px 1fr;
-  }
-
   .rail {
     overflow: auto;
     padding: 1rem;
@@ -472,17 +408,45 @@
   .opt.file input {
     display: none;
   }
+  .ratio {
+    opacity: 0.55;
+    font-size: 0.75em;
+  }
+  .scope {
+    margin-top: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .dims {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+  .dims label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .dims input {
+    width: 100%;
+    padding: 0.25rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: inherit;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
   .ctl input[type='range'] {
     width: 100%;
     accent-color: var(--accent);
-  }
-  .color {
-    width: 100%;
-    height: 34px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background: transparent;
-    cursor: pointer;
   }
 
   .stage {
@@ -528,7 +492,6 @@
     border-color: var(--accent);
     color: var(--accent);
   }
-
   .band {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -546,8 +509,7 @@
   }
 
   @media (max-width: 820px) {
-    .body,
-    .body.full {
+    .body {
       grid-template-columns: 1fr;
       grid-auto-rows: min-content;
     }

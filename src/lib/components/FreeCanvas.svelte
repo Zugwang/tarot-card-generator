@@ -1,12 +1,13 @@
 <script lang="ts">
   import { type Card, cardId } from '../model/deck';
-  import { renderCardSVG, FORMATS } from '../render/card';
-  import { editor, cardRenderOptions } from '../editor/store.svelte';
+  import { renderCardSVG } from '../render/card';
+  import { editor, cardRenderOptions, formatWH } from '../editor/store.svelte';
   import type { FreeLayer } from '../editor/free';
 
   let { card }: { card: Card } = $props();
 
-  const h = $derived(FORMATS[editor.format].h);
+  const w = $derived(formatWH().w);
+  const h = $derived(formatWH().h);
   const free = $derived(editor.freeCards[cardId(card)]);
   const layers = $derived(free?.layers ?? []);
   const selected = $derived(layers.find((l) => l.id === editor.freeLayerId) ?? null);
@@ -27,7 +28,7 @@
   }
   function cardPt(e: PointerEvent) {
     const f = frac(e);
-    return { x: f.x * 250, y: f.y * h };
+    return { x: f.x * w, y: f.y * h };
   }
 
   type Drag =
@@ -50,7 +51,7 @@
   function startResize(e: PointerEvent, l: FreeLayer) {
     e.stopPropagation();
     const c = cardPt(e);
-    const d = Math.hypot(c.x - l.x * 250, c.y - l.y * h) || 1;
+    const d = Math.hypot(c.x - l.x * w, c.y - l.y * h) || 1;
     begin({ mode: 'resize', id: l.id, origSize: l.size, startDist: d }, l.id);
   }
   function startRotate(e: PointerEvent, l: FreeLayer) {
@@ -67,11 +68,11 @@
       l.y = clamp01(drag.oy + (f.y - drag.sy));
     } else if (drag.mode === 'resize') {
       const c = cardPt(e);
-      const d = Math.hypot(c.x - l.x * 250, c.y - l.y * h);
+      const d = Math.hypot(c.x - l.x * w, c.y - l.y * h);
       l.size = clampSize(drag.origSize * (d / drag.startDist));
     } else {
       const c = cardPt(e);
-      l.rot = Math.round((Math.atan2(c.y - l.y * h, c.x - l.x * 250) * 180) / Math.PI + 90);
+      l.rot = Math.round((Math.atan2(c.y - l.y * h, c.x - l.x * w) * 180) / Math.PI + 90);
     }
   }
   function end() {
@@ -85,7 +86,7 @@
   <div class="base">{@html baseSvg}</div>
   <svg
     class="overlay"
-    viewBox="0 0 250 {h}"
+    viewBox="0 0 {w} {h}"
     bind:this={svgEl}
     onpointerdown={() => (editor.freeLayerId = null)}
     role="presentation"
@@ -93,11 +94,11 @@
     {#each layers as l (l.id)}
       {@const b = half(l)}
       <rect
-        x={l.x * 250 - b.w}
+        x={l.x * w - b.w}
         y={l.y * h - b.h}
         width={b.w * 2}
         height={b.h * 2}
-        transform="rotate({l.rot} {l.x * 250} {l.y * h})"
+        transform="rotate({l.rot} {l.x * w} {l.y * h})"
         fill="transparent"
         class="handle"
         role="button"
@@ -109,7 +110,7 @@
 
     {#if selected}
       {@const b = half(selected)}
-      {@const cx = selected.x * 250}
+      {@const cx = selected.x * w}
       {@const cy = selected.y * h}
       <g transform="rotate({selected.rot} {cx} {cy})" pointer-events="all">
         <rect
