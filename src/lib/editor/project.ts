@@ -18,6 +18,7 @@ const KEYS = [
   'pipSize',
   'pipTemplateId',
   'courtStyle',
+  'atoutStyle',
   'illustrationFit',
   'back',
   'freeCards',

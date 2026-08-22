@@ -36,6 +36,8 @@
     | { mode: 'resize'; id: string; origSize: number; startDist: number }
     | { mode: 'rotate'; id: string };
   let drag: Drag | null = null;
+  let snapX = $state(false);
+  let snapY = $state(false);
 
   function begin(d: Drag, id: string) {
     editor.freeLayerId = id;
@@ -64,8 +66,14 @@
     if (!l) return;
     if (drag.mode === 'move') {
       const f = frac(e);
-      l.x = clamp01(drag.ox + (f.x - drag.sx));
-      l.y = clamp01(drag.oy + (f.y - drag.sy));
+      let nx = clamp01(drag.ox + (f.x - drag.sx));
+      let ny = clamp01(drag.oy + (f.y - drag.sy));
+      snapX = Math.abs(nx - 0.5) < 0.018;
+      snapY = Math.abs(ny - 0.5) < 0.018;
+      if (snapX) nx = 0.5;
+      if (snapY) ny = 0.5;
+      l.x = nx;
+      l.y = ny;
     } else if (drag.mode === 'resize') {
       const c = cardPt(e);
       const d = Math.hypot(c.x - l.x * w, c.y - l.y * h);
@@ -77,6 +85,8 @@
   }
   function end() {
     drag = null;
+    snapX = false;
+    snapY = false;
     window.removeEventListener('pointermove', move);
     window.removeEventListener('pointerup', end);
   }
@@ -156,6 +166,9 @@
         />
       </g>
     {/if}
+
+    {#if snapX}<line x1={w / 2} y1="0" x2={w / 2} y2={h} stroke="var(--accent)" stroke-dasharray="4 4" stroke-opacity="0.6" vector-effect="non-scaling-stroke" pointer-events="none" />{/if}
+    {#if snapY}<line x1="0" y1={h / 2} x2={w} y2={h / 2} stroke="var(--accent)" stroke-dasharray="4 4" stroke-opacity="0.6" vector-effect="non-scaling-stroke" pointer-events="none" />{/if}
   </svg>
 </div>
 

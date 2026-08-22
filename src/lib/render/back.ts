@@ -12,7 +12,10 @@ export const BACK_TEMPLATES: BackTemplate[] = [
   { id: 'quadrille', label: 'Quadrillé' },
   { id: 'losanges', label: 'Losanges' },
   { id: 'pois', label: 'Pois' },
+  { id: 'chevrons', label: 'Chevrons' },
+  { id: 'etoiles', label: 'Étoiles' },
   { id: 'ornement', label: 'Ornement' },
+  { id: 'enseigne', label: 'Enseigne' },
 ];
 
 function pattern(id: string): string {
@@ -25,6 +28,10 @@ function pattern(id: string): string {
       return `<pattern id="${id}" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M10 0 L20 10 L10 20 L0 10 Z" ${common}/></pattern>`;
     case 'pois':
       return `<pattern id="${id}" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="2.6" fill="${ink}" fill-opacity="0.32"/></pattern>`;
+    case 'chevrons':
+      return `<pattern id="${id}" width="22" height="16" patternUnits="userSpaceOnUse"><path d="M0 16 L11 5 L22 16 M0 6 L11 -5 L22 6" ${common}/></pattern>`;
+    case 'etoiles':
+      return `<pattern id="${id}" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M12 4 L14 10 L20 12 L14 14 L12 20 L10 14 L4 12 L10 10 Z" fill="${ink}" fill-opacity="0.3"/></pattern>`;
     default:
       return '';
   }

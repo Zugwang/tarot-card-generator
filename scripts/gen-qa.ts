@@ -46,4 +46,16 @@ write('normal8', renderCardSVG(pip8));
 write('explode8', renderCardSVG(pip8, { freeCard: { hideBase: true, layers: cardElements(pip8) } }));
 write('fmt-libre', renderCardSVG({ kind: 'pip', suit: 'trefle', rank: 5 }, { width: 300, height: 220 }));
 
+// 8. atout grimaud, new back motifs, shapes
+write('atout-grimaud', renderCardSVG({ kind: 'atout', number: 13 }, { atoutStyle: 'grimaud' }));
+write('back-chevrons', renderCardSVG(BACK_CARD, { backConfig: { templateId: 'chevrons', color: '#1c4f7a' } }));
+write('back-etoiles', renderCardSVG(BACK_CARD, { backConfig: { templateId: 'etoiles', color: '#5a3d8a' } }));
+write('back-enseigne', renderCardSVG(BACK_CARD, { backConfig: { templateId: 'enseigne', color: '#c0392b', suit: 'coeur' } }));
+const shapes = [
+  { id: 'r', type: 'shape', shape: 'rect', fill: '#f0c419', stroke: '#161616', strokeWidth: 3, x: 0.35, y: 0.38, size: 90, rot: 12 } as const,
+  { id: 'e', type: 'shape', shape: 'ellipse', fill: '#2e86c1', stroke: 'none', strokeWidth: 0, x: 0.62, y: 0.55, size: 70, rot: 0 } as const,
+  { id: 'l', type: 'shape', shape: 'line', fill: 'none', stroke: '#8a1f2b', strokeWidth: 5, x: 0.5, y: 0.8, size: 140, rot: -20 } as const,
+];
+write('shapes', renderCardSVG({ kind: 'court', suit: 'coeur', rank: 'dame' }, { courtStyle: 'blanc', freeCard: { hideBase: true, layers: shapes } }));
+
 console.log('QA svgs written to', dir);

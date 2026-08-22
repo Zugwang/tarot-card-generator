@@ -12,10 +12,12 @@ export interface BaseLayer {
   size: number;
   rot: number;
 }
+export type ShapeKind = 'rect' | 'ellipse' | 'line';
 export type FreeLayer =
   | (BaseLayer & { type: 'suit'; suit: Suit; variant?: string; color?: string })
   | (BaseLayer & { type: 'text'; text: string; color: string })
-  | (BaseLayer & { type: 'image'; href: string });
+  | (BaseLayer & { type: 'image'; href: string })
+  | (BaseLayer & { type: 'shape'; shape: ShapeKind; fill: string; stroke: string; strokeWidth: number });
 
 export interface FreeCard {
   hideBase: boolean;
@@ -42,6 +44,9 @@ export function newTextLayer(): FreeLayer {
 }
 export function newImageLayer(href: string): FreeLayer {
   return { ...base(), type: 'image', href, size: 90 };
+}
+export function newShapeLayer(shape: ShapeKind): FreeLayer {
+  return { ...base(), type: 'shape', shape, size: 80, fill: shape === 'line' ? 'none' : '#8a1f2b', stroke: '#161616', strokeWidth: shape === 'line' ? 3 : 0 };
 }
 
 /** Copy of a (plain) layer with a fresh id, nudged slightly. */

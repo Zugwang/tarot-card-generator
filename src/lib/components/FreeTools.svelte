@@ -2,7 +2,7 @@
   import { type Card, cardId, cardName, SUITS, type Suit } from '../model/deck';
   import { suitColor, suitSymbol } from '../render/suits';
   import { editor, ensureFree, reorderLayer, duplicateLayer, regenerateCard } from '../editor/store.svelte';
-  import { newSuitLayer, newTextLayer, newImageLayer, type FreeLayer } from '../editor/free';
+  import { newSuitLayer, newTextLayer, newImageLayer, newShapeLayer, type FreeLayer } from '../editor/free';
 
   let { card }: { card: Card } = $props();
 
@@ -33,7 +33,10 @@
     if (editor.freeLayerId === layerId) editor.freeLayerId = null;
   }
   function layerLabel(l: FreeLayer): string {
-    return l.type === 'suit' ? SUIT_LABELS[l.suit] : l.type === 'text' ? `« ${l.text} »` : 'Image';
+    if (l.type === 'suit') return SUIT_LABELS[l.suit];
+    if (l.type === 'text') return `« ${l.text} »`;
+    if (l.type === 'shape') return { rect: 'Rectangle', ellipse: 'Cercle', line: 'Ligne' }[l.shape];
+    return 'Image';
   }
 </script>
 
@@ -63,6 +66,9 @@
     {/each}
     <button class="opt" onclick={() => add(newTextLayer())}>Texte</button>
     <label class="opt file">Image<input type="file" accept="image/*" onchange={addImage} /></label>
+    <button class="opt" onclick={() => add(newShapeLayer('rect'))}>▭</button>
+    <button class="opt" onclick={() => add(newShapeLayer('ellipse'))}>◯</button>
+    <button class="opt" onclick={() => add(newShapeLayer('line'))}>╱</button>
   </div>
 </section>
 
@@ -89,6 +95,15 @@
     {/if}
     {#if selected.type === 'suit'}
       <label class="row">Couleur <input type="color" bind:value={selected.color} /></label>
+    {/if}
+    {#if selected.type === 'shape'}
+      {#if selected.shape !== 'line'}
+        <label class="row">Remplissage <input type="color" bind:value={selected.fill} /></label>
+      {/if}
+      <label class="row">Contour <input type="color" bind:value={selected.stroke} /></label>
+      <label class="slider">Épaisseur contour <span class="val">{selected.strokeWidth}</span>
+        <input type="range" min="0" max="20" step="1" bind:value={selected.strokeWidth} />
+      </label>
     {/if}
     <label class="slider">Taille <span class="val">{Math.round(selected.size)}</span>
       <input type="range" min="8" max="180" step="1" bind:value={selected.size} />

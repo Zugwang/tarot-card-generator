@@ -7,12 +7,15 @@
 
 import type { Suit, CourtRank } from '../model/deck';
 
-export function atoutImage(n: number): string {
-  return `/art/atouts/${String(n).padStart(2, '0')}.jpg`;
+export type AtoutStyle = 'marseille' | 'grimaud';
+
+export function atoutImage(n: number, style?: string): string {
+  const dir = style === 'grimaud' ? 'atouts-grimaud' : 'atouts';
+  return `/art/${dir}/${String(n).padStart(2, '0')}.jpg`;
 }
 
-export function excuseImage(): string {
-  return '/art/atouts/fool.jpg';
+export function excuseImage(style?: string): string {
+  return style === 'grimaud' ? '/art/atouts-grimaud/excuse.jpg' : '/art/atouts/fool.jpg';
 }
 
 export type CourtStyle = 'marseille' | 'grimaud' | 'poker' | 'blanc';

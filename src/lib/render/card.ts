@@ -35,8 +35,10 @@ export interface RenderOptions {
   pipSize?: number;
   /** Court set: 'marseille' | 'grimaud' | 'poker' | 'blanc'. */
   courtStyle?: string;
+  /** Atout set: 'marseille' | 'grimaud'. */
+  atoutStyle?: string;
   /** Back motif (used by the 'back' card). */
-  backConfig?: { templateId: string; color: string };
+  backConfig?: { templateId: string; color: string; suit?: Suit; variant?: string };
   /** Free-mode override for this card (layers on top of / instead of the base). */
   freeCard?: FreeCard;
 }
@@ -80,6 +82,17 @@ function renderLayer(layer: FreeLayer, w: number, h: number): string {
   if (layer.type === 'text') {
     return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})"><text text-anchor="middle" dominant-baseline="central" font-family="Georgia, serif" font-size="${layer.size}" fill="${layer.color}">${escapeXml(layer.text)}</text></g>`;
   }
+  if (layer.type === 'shape') {
+    const hs = layer.size / 2;
+    const st = `fill="${layer.fill}" stroke="${layer.stroke}" stroke-width="${layer.strokeWidth}"`;
+    const shape =
+      layer.shape === 'rect'
+        ? `<rect x="${-hs}" y="${-hs}" width="${layer.size}" height="${layer.size}" ${st}/>`
+        : layer.shape === 'ellipse'
+          ? `<ellipse cx="0" cy="0" rx="${hs}" ry="${hs}" ${st}/>`
+          : `<line x1="${-hs}" y1="0" x2="${hs}" y2="0" stroke="${layer.stroke}" stroke-width="${layer.strokeWidth}" stroke-linecap="round"/>`;
+    return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})">${shape}</g>`;
+  }
   const s = layer.size;
   return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})"><image href="${layer.href}" xlink:href="${layer.href}" x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet"/></g>`;
 }
@@ -100,6 +113,22 @@ function renderPips(card: Card & { suit: Suit; rank: number }, tpl: PipTemplate,
   if (card.rank === 1) return placeSymbol(inner, w / 2, h / 2, pipSize * ACE_RATIO, 0);
   const area = pipArea(w, h);
   return tpl.layout(card.rank).map((pl) => placeSymbol(inner, area.x + pl.x * area.w, area.y + pl.y * area.h, pipSize, pl.rot)).join('');
+}
+
+/** Back motif tiling the chosen suit symbol. */
+function backEnseigne(bc: NonNullable<RenderOptions['backConfig']>, w: number, h: number): string {
+  const m = 12;
+  const iw = w - 2 * m;
+  const ih = h - 2 * m;
+  const suit = bc.suit ?? 'pique';
+  const color = bc.color ?? suitColor(suit);
+  const step = 42;
+  const tile = `<g transform="translate(${step / 2} ${step / 2}) scale(0.26) translate(-50 -50)">${suitSymbol(suit, bc.variant, color)}</g>`;
+  return (
+    `<defs><pattern id="bp-ens" width="${step}" height="${step}" patternUnits="userSpaceOnUse">${tile}</pattern></defs>` +
+    `<rect x="${m}" y="${m}" width="${iw}" height="${ih}" rx="12" fill="#ffffff"/>` +
+    `<rect x="${m}" y="${m}" width="${iw}" height="${ih}" rx="12" fill="url(#bp-ens)"/>`
+  );
 }
 
 function renderImage(uid: string, href: string, w: number, h: number, fit: 'meet' | 'slice' = 'meet'): string {
@@ -155,10 +184,10 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
       break;
     }
     case 'atout':
-      els.push(imageL(atoutImage(card.number), 0.5, 0.5, h * 0.94, 0));
+      els.push(imageL(atoutImage(card.number, opts.atoutStyle), 0.5, 0.5, h * 0.94, 0));
       break;
     case 'excuse':
-      els.push(imageL(excuseImage(), 0.5, 0.5, h * 0.94, 0));
+      els.push(imageL(excuseImage(opts.atoutStyle), 0.5, 0.5, h * 0.94, 0));
       break;
     case 'back':
       break; // back keeps its motif background, not decomposed
@@ -193,14 +222,19 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
         break;
       }
       case 'atout':
-        body = renderImage(cardId(card), atoutImage(card.number), w, h, opts.imageFit);
+        body = renderImage(cardId(card), atoutImage(card.number, opts.atoutStyle), w, h, opts.imageFit);
         break;
       case 'excuse':
-        body = renderImage(cardId(card), excuseImage(), w, h, opts.imageFit);
+        body = renderImage(cardId(card), excuseImage(opts.atoutStyle), w, h, opts.imageFit);
         break;
-      case 'back':
-        body = backBase(opts.backConfig?.templateId ?? 'quadrille', opts.backConfig?.color ?? '#8a1f2b', w, h);
+      case 'back': {
+        const bc = opts.backConfig;
+        body =
+          bc?.templateId === 'enseigne'
+            ? backEnseigne(bc, w, h)
+            : backBase(bc?.templateId ?? 'quadrille', bc?.color ?? '#8a1f2b', w, h);
         break;
+      }
     }
 
   const overlay = free?.layers.length ? free.layers.map((l) => renderLayer(l, w, h)).join('') : '';

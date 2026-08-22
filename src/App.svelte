@@ -1,6 +1,6 @@
 <script lang="ts">
   import { generateDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
-  import { editor, cardRenderOptions, ensureExploded, removeLayer } from './lib/editor/store.svelte';
+  import { editor, cardRenderOptions, ensureExploded, removeLayer, copyLayer, pasteLayer } from './lib/editor/store.svelte';
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
@@ -11,6 +11,7 @@
   import { BACK_TEMPLATES } from './lib/render/back';
   import { exportPng, exportSheetPng } from './lib/export/png';
   import { exportSvg, exportSheetSvg } from './lib/export/svg';
+  import { exportZip } from './lib/export/zip';
   import { saveProject, loadProjectFromFile } from './lib/editor/project';
 
   const COURT_STYLES = [
@@ -18,6 +19,10 @@
     { id: 'grimaud', label: 'Trad 1898' },
     { id: 'poker', label: 'Poker' },
     { id: 'blanc', label: 'Blanc' },
+  ];
+  const ATOUT_STYLES = [
+    { id: 'marseille', label: 'Marseille' },
+    { id: 'grimaud', label: 'Trad 1898' },
   ];
   const formatIds = Object.keys(FORMATS) as FormatId[];
 
@@ -48,11 +53,18 @@
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return; // don't hijack typing
     if (editor.tab === 'libre') {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && editor.freeLayerId && selectedCard) {
+      if (!selectedCard) return;
+      const id = cardId(selectedCard);
+      if ((e.key === 'Delete' || e.key === 'Backspace') && editor.freeLayerId) {
         e.preventDefault();
-        removeLayer(cardId(selectedCard), editor.freeLayerId);
+        removeLayer(id, editor.freeLayerId);
       } else if (e.key === 'Escape') {
         editor.freeLayerId = null;
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && editor.freeLayerId) {
+        copyLayer(id, editor.freeLayerId);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        pasteLayer(id);
       }
       return;
     }
@@ -64,6 +76,7 @@
   // --- export ---
   let busy = $state('');
   let scope = $state<'carte' | 'jeu'>('carte');
+  let asZip = $state(false);
   async function run(label: string, fn: () => Promise<void>) {
     busy = label;
     try {
@@ -77,12 +90,17 @@
   function doExport(fmt: 'png' | 'svg') {
     const cols = editor.deckSize >= 78 ? 14 : 13;
     if (scope === 'jeu') {
-      const svgs = displayCards.map(renderOne);
-      run(`Export planche ${fmt.toUpperCase()}…`, () =>
-        fmt === 'png'
-          ? exportSheetPng(svgs, cols, `tarotier-${editor.deckSize}.png`)
-          : exportSheetSvg(svgs, cols, `tarotier-${editor.deckSize}.svg`),
-      );
+      const entries = displayCards.map((c) => ({ name: cardId(c), svg: renderOne(c) }));
+      if (asZip) {
+        run(`ZIP ${fmt.toUpperCase()}…`, () => exportZip(entries, fmt, `tarotier-${editor.deckSize}-${fmt}.zip`));
+      } else {
+        const svgs = entries.map((e) => e.svg);
+        run(`Planche ${fmt.toUpperCase()}…`, () =>
+          fmt === 'png'
+            ? exportSheetPng(svgs, cols, `tarotier-${editor.deckSize}.png`)
+            : exportSheetSvg(svgs, cols, `tarotier-${editor.deckSize}.svg`),
+        );
+      }
     } else if (selectedCard) {
       const svg = renderOne(selectedCard);
       const name = cardId(selectedCard);
@@ -150,6 +168,9 @@
             <button class="opt" onclick={() => doExport('png')} disabled={!!busy || (scope === 'carte' && !selectedCard)}>Export PNG</button>
             <button class="opt" onclick={() => doExport('svg')} disabled={!!busy || (scope === 'carte' && !selectedCard)}>Export SVG</button>
           </div>
+          {#if scope === 'jeu'}
+            <label class="check"><input type="checkbox" bind:checked={asZip} /> Fichiers séparés (zip)</label>
+          {/if}
         </div>
       </section>
 
@@ -198,6 +219,15 @@
         </section>
 
         <section class="ctl">
+          <h2>Atouts (78)</h2>
+          <div class="opts">
+            {#each ATOUT_STYLES as s}
+              <button class="opt" class:active={editor.atoutStyle === s.id} onclick={() => (editor.atoutStyle = s.id)}>{s.label}</button>
+            {/each}
+          </div>
+        </section>
+
+        <section class="ctl">
           <h2>Cadrage illustrations</h2>
           <div class="opts">
             <button class="opt" class:active={editor.illustrationFit === 'meet'} onclick={() => (editor.illustrationFit = 'meet')}>Entier</button>
@@ -214,6 +244,13 @@
               {/each}
             </div>
             <label class="row">Couleur <input type="color" bind:value={editor.back.color} /></label>
+            {#if editor.back.templateId === 'enseigne'}
+              <div class="opts" style="margin-top:.5rem">
+                {#each ['pique', 'coeur', 'carreau', 'trefle'] as const as s}
+                  <button class="opt" class:active={editor.back.suit === s} onclick={() => (editor.back.suit = s)}>{s}</button>
+                {/each}
+              </div>
+            {/if}
           </section>
         {/if}
         <FreeTools card={selectedCard} />
@@ -428,6 +465,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
   }
   .dims {
     display: flex;

@@ -39,10 +39,12 @@ export const editor = $state({
   pipSize: 34,
   /** Pip positioning template id. */
   pipTemplateId: 'classic',
-  /** Court-illustration style: 'grimaud' | 'marseille' | 'genere'. */
+  /** Court-illustration style: 'marseille' | 'grimaud' | 'poker' | 'blanc'. */
   courtStyle: 'marseille' as string,
+  /** Atout-illustration style: 'marseille' | 'grimaud'. */
+  atoutStyle: 'marseille' as string,
   selectedId: null as string | null,
-  back: { templateId: 'quadrille', color: '#8a1f2b' },
+  back: { templateId: 'quadrille', color: '#8a1f2b', suit: 'pique' as Suit },
   /** Free-mode overrides, keyed by card id. */
   freeCards: {} as Record<string, FreeCard>,
   /** Currently selected free layer id (for the properties panel). */
@@ -64,6 +66,20 @@ export function reorderLayer(cardId: string, layerId: string, dir: 1 | -1): void
   if (i < 0 || j < 0 || j >= f.layers.length) return;
   const [x] = f.layers.splice(i, 1);
   f.layers.splice(j, 0, x);
+}
+
+let clipboard: import('./free').FreeLayer | null = null;
+/** Copy a layer to the internal clipboard. */
+export function copyLayer(cardId: string, layerId: string): void {
+  const l = editor.freeCards[cardId]?.layers.find((x) => x.id === layerId);
+  if (l) clipboard = $state.snapshot(l) as import('./free').FreeLayer;
+}
+/** Paste the clipboard layer (offset) onto a card. */
+export function pasteLayer(cardId: string): void {
+  if (!clipboard) return;
+  const c = duplicated(clipboard);
+  ensureFree(cardId).layers.push(c);
+  editor.freeLayerId = c.id;
 }
 
 /** Remove a free layer. */
@@ -105,6 +121,7 @@ export function cardRenderOptions(): RenderOptions {
     customSuitImages: editor.customSuitImages,
     pipSize: editor.pipSize,
     courtStyle: editor.courtStyle,
+    atoutStyle: editor.atoutStyle,
     imageFit: editor.illustrationFit,
     backConfig: editor.back,
   };

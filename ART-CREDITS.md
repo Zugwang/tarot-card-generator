@@ -25,3 +25,8 @@ Pas encore d'illustrations : rendu par un placeholder généré. Aucune source
 Tarot de Marseille propre et complète des 16 figures n'existe sur Wikimedia
 Commons (les mineures 2–10 du Marseille sont des cartes à points, générées par
 le moteur de pips).
+
+## Atouts « Trad 1898 » (`public/art/atouts-grimaud/`)
+
+Tarot nouveau Grimaud 1898 (« Trumps » 01–21 + Excuse), domaine public.
+Source : Wikimedia Commons — catégorie « Tarot nouveau - Grimaud - 1898 ».
