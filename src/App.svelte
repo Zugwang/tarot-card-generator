@@ -4,6 +4,8 @@
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
+  import FreeCanvas from './lib/components/FreeCanvas.svelte';
+  import FreeTools from './lib/components/FreeTools.svelte';
   import { renderCardSVG, FORMATS, type FormatId } from './lib/render/card';
   import { PIP_TEMPLATES, pipTemplate } from './lib/render/pipLayouts';
   import { BACK_TEMPLATES, renderBackSVG } from './lib/render/back';
@@ -29,6 +31,7 @@
 
   function select(id: string) {
     editor.selectedId = id;
+    editor.freeLayerId = null;
   }
 
   function step(delta: number) {
@@ -97,19 +100,22 @@
 
     <div class="seg" role="group" aria-label="Onglet">
       <button class:active={editor.tab === 'cartes'} onclick={() => (editor.tab = 'cartes')}>Cartes</button>
+      <button class:active={editor.tab === 'libre'} onclick={() => (editor.tab = 'libre')}>Libre</button>
       <button class:active={editor.tab === 'dos'} onclick={() => (editor.tab = 'dos')}>Dos</button>
     </div>
 
-    {#if editor.tab === 'cartes'}
+    {#if editor.tab !== 'dos'}
       <div class="seg" role="group" aria-label="Type de jeu">
         {#each DECK_SIZES as d}
           <button class:active={editor.deckSize === d} onclick={() => (editor.deckSize = d)}>{d}</button>
         {/each}
       </div>
-      <div class="seg" role="group" aria-label="Visualisation">
-        <button class:active={editor.viewMode === 'mosaic'} onclick={() => (editor.viewMode = 'mosaic')}>Mosaïque</button>
-        <button class:active={editor.viewMode === 'strip'} onclick={() => (editor.viewMode = 'strip')}>Bandeau</button>
-      </div>
+      {#if editor.tab === 'cartes'}
+        <div class="seg" role="group" aria-label="Visualisation">
+          <button class:active={editor.viewMode === 'mosaic'} onclick={() => (editor.viewMode = 'mosaic')}>Mosaïque</button>
+          <button class:active={editor.viewMode === 'strip'} onclick={() => (editor.viewMode = 'strip')}>Bandeau</button>
+        </div>
+      {/if}
       <span class="count">{deck.length} cartes</span>
     {/if}
 
@@ -182,7 +188,7 @@
             <button class="opt" onclick={exportSheet} disabled={!!busy}>Planche</button>
           </div>
         </section>
-      {:else}
+      {:else if editor.tab === 'dos'}
         <section class="ctl">
           <h2>Motif du dos</h2>
           <div class="opts">
@@ -213,6 +219,16 @@
             <button class="opt" onclick={exportBack} disabled={!!busy}>Exporter le dos</button>
           </div>
         </section>
+      {:else if selectedCard}
+        <FreeTools card={selectedCard} />
+        <section class="ctl">
+          <h2>Export PNG</h2>
+          <div class="opts">
+            <button class="opt" onclick={exportCard} disabled={!!busy}>Exporter la carte</button>
+          </div>
+        </section>
+      {:else}
+        <p class="hint">Choisis une carte à éditer dans la liste →</p>
       {/if}
     </aside>
 
@@ -221,6 +237,15 @@
       {#if editor.tab === 'dos'}
         <div class="preview">
           <div class="big">{@html backSvg}</div>
+        </div>
+      {:else if editor.tab === 'libre'}
+        <div class="preview">
+          {#if selectedCard}
+            <FreeCanvas card={selectedCard} />
+            <p class="hint">Glisse les calques ; ajoute-les depuis le panneau de gauche.</p>
+          {:else}
+            <div class="hint">Choisis une carte à éditer →</div>
+          {/if}
         </div>
       {:else if editor.viewMode === 'mosaic'}
         <div class="mosaic">
@@ -244,10 +269,10 @@
       {/if}
     </main>
 
-    <!-- Right: thumbnails (strip) or selection (mosaic) -->
-    {#if editor.tab === 'cartes'}
+    <!-- Right: card picker (strip / libre) or selection info (mosaic) -->
+    {#if editor.tab !== 'dos'}
       <aside class="rail right">
-        {#if editor.viewMode === 'strip'}
+        {#if editor.tab === 'libre' || editor.viewMode === 'strip'}
           <h2>Cartes</h2>
           <div class="band">
             {#each deck as card (cardId(card))}

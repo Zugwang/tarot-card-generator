@@ -17,6 +17,7 @@ const KEYS = [
   'pipTemplateId',
   'courtStyle',
   'back',
+  'freeCards',
 ] as const;
 
 export function serializeProject(): string {

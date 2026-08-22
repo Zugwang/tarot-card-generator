@@ -1,8 +1,7 @@
 <script lang="ts">
-  import type { Card } from '../model/deck';
-  import { renderCardSVG, FORMATS } from '../render/card';
-  import { pipTemplate } from '../render/pipLayouts';
-  import { editor } from '../editor/store.svelte';
+  import { type Card, cardId } from '../model/deck';
+  import { renderCardSVG } from '../render/card';
+  import { editor, cardRenderOptions } from '../editor/store.svelte';
 
   let {
     card,
@@ -11,14 +10,7 @@
   }: { card: Card; selected?: boolean; onselect?: () => void } = $props();
 
   const svg = $derived(
-    renderCardSVG(card, {
-      height: FORMATS[editor.format].h,
-      pipTemplate: pipTemplate(editor.pipTemplateId),
-      suitVariants: editor.suitVariants,
-      customSuitImages: editor.customSuitImages,
-      pipSize: editor.pipSize,
-      courtStyle: editor.courtStyle,
-    }),
+    renderCardSVG(card, { ...cardRenderOptions(), freeCard: editor.freeCards[cardId(card)] }),
   );
 </script>
 

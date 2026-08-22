@@ -9,6 +9,7 @@ import { type Card, type Suit, type CourtRank, cardLabel, cardId } from '../mode
 import { suitColor, suitSymbol } from './suits';
 import { classicTemplate, type PipTemplate } from './pipLayouts';
 import { atoutImage, excuseImage, courtImage } from './illustrations';
+import type { FreeCard, FreeLayer } from '../editor/free';
 
 export const CARD_W = 250;
 
@@ -36,6 +37,35 @@ export interface RenderOptions {
   pipSize?: number;
   /** Which court-illustration set to use. */
   courtStyle?: string;
+  /** Free-mode override for this card (layers on top of / instead of the base). */
+  freeCard?: FreeCard;
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
+}
+
+/** Render one free-mode layer to SVG markup. */
+function renderLayer(layer: FreeLayer, h: number): string {
+  const cx = layer.x * CARD_W;
+  const cy = layer.y * h;
+  if (layer.type === 'suit') {
+    const color = layer.color ?? suitColor(layer.suit);
+    return placeSymbol(suitSymbol(layer.suit, layer.variant, color), cx, cy, layer.size, layer.rot as 0 | 180);
+  }
+  if (layer.type === 'text') {
+    return (
+      `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})">` +
+      `<text text-anchor="middle" dominant-baseline="central" font-family="Georgia, serif" ` +
+      `font-size="${layer.size}" fill="${layer.color}">${escapeXml(layer.text)}</text></g>`
+    );
+  }
+  const s = layer.size;
+  return (
+    `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})">` +
+    `<image href="${layer.href}" xlink:href="${layer.href}" x="${-s / 2}" y="${-s / 2}" ` +
+    `width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet"/></g>`
+  );
 }
 
 /** Pip layout area for a given height. */
@@ -140,9 +170,13 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
   const h = opts.height ?? DEFAULT_H;
   const tpl = opts.pipTemplate ?? classicTemplate;
   const pipSize = opts.pipSize ?? PIP_SIZE;
+  const free = opts.freeCard;
   let body = '';
   let corners = '';
 
+  if (free?.hideBase) {
+    // Blank base — only the free layers show.
+  } else
   switch (card.kind) {
     case 'pip':
       corners = cornerIndex(card, opts, h);
@@ -166,6 +200,8 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
       break;
   }
 
+  const overlay = free?.layers.length ? free.layers.map((l) => renderLayer(l, h)).join('') : '';
+
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
     `viewBox="0 0 ${CARD_W} ${h}" width="${CARD_W}" height="${h}" role="img">` +
@@ -173,6 +209,7 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
     `fill="#ffffff" stroke="#d9d4c8" stroke-width="2"/>` +
     body +
     corners +
+    overlay +
     `</svg>`
   );
 }

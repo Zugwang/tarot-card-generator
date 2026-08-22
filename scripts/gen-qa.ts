@@ -23,4 +23,13 @@ for (const f of Object.keys(FORMATS) as FormatId[]) write(`fmt-${f}`, renderCard
 // 4. backs
 for (const b of BACK_TEMPLATES) write(`back-${b.id}`, renderBackSVG({ templateId: b.id, color: '#8a1f2b' }));
 
+// 5. free mode (static render used by export)
+const freeLayers = [
+  { id: 'a', type: 'suit', suit: 'trefle', x: 0.3, y: 0.32, size: 70, rot: 20, color: '#1a7a3a' } as const,
+  { id: 'b', type: 'text', text: 'JOKER', color: '#8a1f2b', x: 0.5, y: 0.7, size: 30, rot: 0 } as const,
+  { id: 'c', type: 'suit', suit: 'coeur', x: 0.72, y: 0.5, size: 40, rot: -15 } as const,
+];
+write('free-overlay', renderCardSVG(pip5, { freeCard: { hideBase: false, layers: freeLayers } }));
+write('free-blank', renderCardSVG(pip5, { freeCard: { hideBase: true, layers: freeLayers } }));
+
 console.log('QA svgs written to', dir);

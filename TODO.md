@@ -19,16 +19,19 @@ Statut au 2026-08-22.
 - [x] **Flèches préc./suiv.** en mode Bandeau (+ clavier ←/→)
 - [x] **Onglet Dos de carte** : motifs (uni, quadrillé, losanges, pois, ornement) + couleur
 
-## À faire
+## Fait (suite)
 
-- [ ] **Export PNG** (par carte / planche) — sérialiser le SVG → canvas → `toBlob`.
-      Inliner les images en data-URL (rendu data-URL déjà validé). Le dos aussi.
-- [ ] **Sauvegarde / chargement projet JSON** — sérialiser `editor` (déjà plat).
-- [ ] **Mode libre** — débrider le placement (déplacer / ajouter / retirer
-      symboles, texte, image), éditer n'importe quelle carte et le dos hors contraintes.
+- [x] **Export PNG** : carte / planche / dos (inline des images en data-URL puis canvas)
+- [x] **Sauvegarde / chargement projet JSON** (inclut les calques du mode libre)
+- [x] **Mode libre** : onglet dédié, calques enseigne/texte/image, déplacement à
+      la souris, propriétés (taille/rotation/couleur), masquage du fond ;
+      inclus dans l'export PNG et le JSON
 
 ## Idées / raffinements
 
+- [ ] Mode libre : calques aussi sur le **dos** ; poignées de redim/rotation au canvas ;
+      z-order (avancer/reculer) ; snap ; duplication de calque.
+- [ ] Export : **ZIP** de toutes les cartes en PNG séparés (dépend de JSZip) ; export SVG.
 - [ ] Figures Marseille : recadrage (bandes blanches latérales dues au ratio).
 - [ ] Plus de variantes d'enseignes ; recoloration par enseigne.
 - [ ] Dos : motif à partir de l'enseigne choisie ; plus de templates.
