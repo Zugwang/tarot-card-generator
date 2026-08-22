@@ -45,6 +45,8 @@ Statut au 2026-08-22.
 - [x] Figures : « blanc » + « poker » (English pattern PD) ; « généré » retiré
 - [x] Taille des enseignes jusqu'à 100
 - [x] Export : toggle Carte/Jeu (PNG/SVG)
+- [x] Template pips « super-espacé »
+- [x] Mode libre : « Regénérer depuis le modèle » ; Suppr/Échap au clavier
 
 ## Idées / raffinements
 
