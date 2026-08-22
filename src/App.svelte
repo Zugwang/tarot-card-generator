@@ -1,6 +1,6 @@
 <script lang="ts">
   import { generateDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
-  import { editor, cardRenderOptions, ensureExploded } from './lib/editor/store.svelte';
+  import { editor, cardRenderOptions, ensureExploded, removeLayer } from './lib/editor/store.svelte';
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
@@ -45,7 +45,18 @@
     select(cardId(displayCards[i]));
   }
   function onKey(e: KeyboardEvent) {
-    if (editor.tab !== 'cartes' || editor.viewMode !== 'strip') return;
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return; // don't hijack typing
+    if (editor.tab === 'libre') {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && editor.freeLayerId && selectedCard) {
+        e.preventDefault();
+        removeLayer(cardId(selectedCard), editor.freeLayerId);
+      } else if (e.key === 'Escape') {
+        editor.freeLayerId = null;
+      }
+      return;
+    }
+    if (editor.viewMode !== 'strip') return;
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
   }

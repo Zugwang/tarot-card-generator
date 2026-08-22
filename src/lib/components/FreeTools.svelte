@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Card, cardId, cardName, SUITS, type Suit } from '../model/deck';
   import { suitColor, suitSymbol } from '../render/suits';
-  import { editor, ensureFree, reorderLayer, duplicateLayer } from '../editor/store.svelte';
+  import { editor, ensureFree, reorderLayer, duplicateLayer, regenerateCard } from '../editor/store.svelte';
   import { newSuitLayer, newTextLayer, newImageLayer, type FreeLayer } from '../editor/free';
 
   let { card }: { card: Card } = $props();
@@ -46,6 +46,11 @@
       Masquer le fond généré
     </label>
   {/if}
+  <button
+    class="opt regen"
+    title="Reconstruit la carte depuis le modèle (annule les modifications libres)"
+    onclick={() => confirm('Regénérer cette carte depuis le modèle ? Les modifications libres seront perdues.') && regenerateCard(card)}
+  >↻ Regénérer depuis le modèle</button>
 </section>
 
 <section class="ctl">
@@ -214,6 +219,10 @@
   }
   .zorder {
     margin-top: 0.7rem;
+  }
+  .regen {
+    margin-top: 0.7rem;
+    width: 100%;
   }
   .opt.danger {
     margin-top: 0.8rem;

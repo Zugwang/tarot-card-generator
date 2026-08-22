@@ -67,12 +67,17 @@ const classicLayout: PipLayout = (n) => CLASSIC[n] ?? [];
 
 // ---- spaced (classic pushed toward the edges) -------------------------------
 
-const spacedLayout: PipLayout = (n) =>
-  classicLayout(n).map((pl) => ({
-    x: clamp(0.5 + (pl.x - 0.5) * 1.4),
-    y: clamp(0.5 + (pl.y - 0.5) * 1.18),
-    rot: pl.rot,
-  }));
+const expand =
+  (fx: number, fy: number): PipLayout =>
+  (n) =>
+    classicLayout(n).map((pl) => ({
+      x: clamp(0.5 + (pl.x - 0.5) * fx),
+      y: clamp(0.5 + (pl.y - 0.5) * fy),
+      rot: pl.rot,
+    }));
+
+const spacedLayout = expand(1.4, 1.18);
+const superSpacedLayout = expand(1.85, 1.32);
 
 // ---- circular ---------------------------------------------------------------
 
@@ -119,6 +124,7 @@ export const classicTemplate: PipTemplate = { id: 'classic', label: 'Classique',
 export const PIP_TEMPLATES: PipTemplate[] = [
   classicTemplate,
   { id: 'spaced', label: 'Espacé', layout: spacedLayout },
+  { id: 'superspaced', label: 'Super-espacé', layout: superSpacedLayout },
   { id: 'circular', label: 'Circulaire', layout: circularLayout },
   { id: 'grid', label: 'Grille', layout: gridLayout },
   { id: 'diagonal', label: 'Diagonale', layout: diagonalLayout },

@@ -66,6 +66,14 @@ export function reorderLayer(cardId: string, layerId: string, dir: 1 | -1): void
   f.layers.splice(j, 0, x);
 }
 
+/** Remove a free layer. */
+export function removeLayer(cardId: string, layerId: string): void {
+  const f = editor.freeCards[cardId];
+  if (!f) return;
+  f.layers = f.layers.filter((l) => l.id !== layerId);
+  if (editor.freeLayerId === layerId) editor.freeLayerId = null;
+}
+
 /** Duplicate a free layer and select the copy. */
 export function duplicateLayer(cardId: string, layerId: string): void {
   const f = editor.freeCards[cardId];
@@ -102,15 +110,24 @@ export function cardRenderOptions(): RenderOptions {
   };
 }
 
+/** Build the free-mode state for a card from the current deck options. */
+function freeFromModel(card: Card): FreeCard {
+  return card.kind === 'back'
+    ? emptyFreeCard()
+    : { hideBase: true, layers: cardElements(card, cardRenderOptions()) };
+}
+
 /** Auto-decompose a card into free layers on entering free mode (except the back). */
 export function ensureExploded(card: Card): void {
   const id = cardId(card);
   if (editor.freeCards[id]) return;
-  if (card.kind === 'back') {
-    editor.freeCards[id] = emptyFreeCard(); // keep motif base, add layers on top
-  } else {
-    editor.freeCards[id] = { hideBase: true, layers: cardElements(card, cardRenderOptions()) };
-  }
+  editor.freeCards[id] = freeFromModel(card);
+}
+
+/** Discard manual edits and rebuild the card from the current model/options. */
+export function regenerateCard(card: Card): void {
+  editor.freeLayerId = null;
+  editor.freeCards[cardId(card)] = freeFromModel(card);
 }
 
 export function setSuitVariant(suit: Suit, variantId: string): void {
