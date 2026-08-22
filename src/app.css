@@ -7,22 +7,37 @@
   --accent: #8a1f2b;
 
   font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
-  color-scheme: light dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Dark tokens — shared by the system preference (unless forced light) and the
+   explicit toggle. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --text: #cbc9d1;
     --text-h: #f3f4f6;
     --bg: #17161c;
     --panel: #201f27;
     --border: #33313d;
     --accent: #e0808c;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --text: #cbc9d1;
+  --text-h: #f3f4f6;
+  --bg: #17161c;
+  --panel: #201f27;
+  --border: #33313d;
+  --accent: #e0808c;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 * {
@@ -32,6 +47,8 @@
 body {
   margin: 0;
   min-height: 100svh;
+  color: var(--text);
+  background: var(--bg);
 }
 
 h1 {

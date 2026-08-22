@@ -1,27 +1,58 @@
 // Card renderer — pure function producing an SVG string for a card.
 // Pure-string output means the same code drives on-screen preview (via {@html})
 // and, later, PNG export (serialize SVG → canvas → toBlob).
+//
+// Geometry: width is fixed (CARD_W); only height varies by format, so pip size
+// and corner indices stay consistent across formats.
 
 import { type Card, type Suit, cardLabel, cardId } from '../model/deck';
 import { suitColor, suitSymbol } from './suits';
 import { classicTemplate, type PipTemplate } from './pipLayouts';
 import { atoutImage, excuseImage, courtImage } from './illustrations';
 
-// Card geometry (SVG user units). Poker-ish 2.5:3.5 ratio.
 export const CARD_W = 250;
-export const CARD_H = 350;
 
-// Inner rectangle the pips are laid out within.
-const PIP_AREA = { x: 48, y: 52, w: CARD_W - 96, h: CARD_H - 104 };
+/** Card formats — fixed width, varying height. */
+export type FormatId = 'standard' | 'carre' | 'tarot';
+export const FORMATS: Record<FormatId, { label: string; h: number }> = {
+  standard: { label: 'Standard', h: 350 },
+  carre: { label: 'Carré', h: 250 },
+  tarot: { label: 'Tarot', h: 455 },
+};
+export const DEFAULT_H = FORMATS.standard.h;
+
 export const PIP_SIZE = 34; // default nominal symbol box for pip cards
 const ACE_RATIO = 82 / PIP_SIZE; // keep the Ace proportional to the pip size
 
 export interface RenderOptions {
+  /** Card height in units (width is fixed at {@link CARD_W}). */
+  height?: number;
   pipTemplate?: PipTemplate;
   /** Chosen enseigne variant id per suit (falls back to each suit's default). */
   suitVariants?: Partial<Record<Suit, string>>;
+  /** Data-URL PNG overriding a suit's symbol (from user upload). */
+  customSuitImages?: Partial<Record<Suit, string | null>>;
   /** Suit-symbol size in card units for pip cards (default {@link PIP_SIZE}). */
   pipSize?: number;
+  /** Which court-illustration set to use. */
+  courtStyle?: string;
+}
+
+/** Pip layout area for a given height. */
+function pipArea(h: number) {
+  return { x: 48, y: 0.15 * h, w: CARD_W - 96, h: 0.7 * h };
+}
+
+/** Inner SVG for a suit's symbol: user PNG if present, else the vector variant. */
+function symbolFor(suit: Suit, opts: RenderOptions, color?: string): string {
+  const custom = opts.customSuitImages?.[suit];
+  if (custom) {
+    return (
+      `<image href="${custom}" xlink:href="${custom}" x="0" y="0" width="100" height="100" ` +
+      `preserveAspectRatio="xMidYMid meet"/>`
+    );
+  }
+  return suitSymbol(suit, opts.suitVariants?.[suit], color);
 }
 
 /** One suit symbol placed at (cx,cy), rotated, scaled to `size`. */
@@ -33,110 +64,98 @@ function placeSymbol(inner: string, cx: number, cy: number, size: number, rot: n
   );
 }
 
-function cornerIndex(label: string, suit: Suit, variantId?: string): string {
-  const color = suitColor(suit);
-  const mini = suitSymbol(suit, variantId, color);
-  // Top-left index, then a 180°-rotated copy at bottom-right.
+function cornerIndex(card: Card & { suit: Suit }, opts: RenderOptions, h: number): string {
+  const label = cardLabel(card);
+  const color = suitColor(card.suit);
+  const mini = symbolFor(card.suit, opts, color);
   const block = (x: number, y: number, rot: number) =>
     `<g transform="translate(${x} ${y}) rotate(${rot})">` +
     `<text x="0" y="0" text-anchor="middle" font-family="Georgia, serif" ` +
     `font-size="26" font-weight="600" fill="${color}">${label}</text>` +
     `<g transform="translate(-11 6) scale(0.22)">${mini}</g>` +
     `</g>`;
-  return block(26, 34, 0) + block(CARD_W - 26, CARD_H - 34, 180);
+  return block(26, 34, 0) + block(CARD_W - 26, h - 34, 180);
 }
 
 function renderPips(
-  suit: Suit,
-  rank: number,
+  card: Card & { suit: Suit; rank: number },
   tpl: PipTemplate,
-  variantId: string | undefined,
   pipSize: number,
+  opts: RenderOptions,
+  h: number,
 ): string {
-  const inner = suitSymbol(suit, variantId);
-  if (rank === 1) {
-    return placeSymbol(inner, CARD_W / 2, CARD_H / 2, pipSize * ACE_RATIO, 0);
+  const inner = symbolFor(card.suit, opts);
+  if (card.rank === 1) {
+    return placeSymbol(inner, CARD_W / 2, h / 2, pipSize * ACE_RATIO, 0);
   }
-  const placements = tpl.layout(rank);
-  return placements
+  const area = pipArea(h);
+  return tpl
+    .layout(card.rank)
     .map((pl) =>
-      placeSymbol(
-        inner,
-        PIP_AREA.x + pl.x * PIP_AREA.w,
-        PIP_AREA.y + pl.y * PIP_AREA.h,
-        pipSize,
-        pl.rot,
-      ),
+      placeSymbol(inner, area.x + pl.x * area.w, area.y + pl.y * area.h, pipSize, pl.rot),
     )
     .join('');
 }
 
 /** Full-frame illustration (e.g. Marseille atout), fitted inside the card. */
-function renderImage(uid: string, href: string): string {
+function renderImage(uid: string, href: string, h: number): string {
   const m = 7;
   const w = CARD_W - 2 * m;
-  const h = CARD_H - 2 * m;
+  const ih = h - 2 * m;
   const id = `clip-${uid}`;
   return (
-    `<defs><clipPath id="${id}"><rect x="${m}" y="${m}" width="${w}" height="${h}" rx="11"/></clipPath></defs>` +
-    `<image href="${href}" xlink:href="${href}" x="${m}" y="${m}" width="${w}" height="${h}" ` +
+    `<defs><clipPath id="${id}"><rect x="${m}" y="${m}" width="${w}" height="${ih}" rx="11"/></clipPath></defs>` +
+    `<image href="${href}" xlink:href="${href}" x="${m}" y="${m}" width="${w}" height="${ih}" ` +
     `preserveAspectRatio="xMidYMid meet" clip-path="url(#${id})"/>`
   );
 }
 
-/** Placeholder for cards without an illustration yet (courts). */
-function renderPlaceholder(label: string, color: string, symbol?: string): string {
-  const glyph = symbol
-    ? `<g transform="translate(${CARD_W / 2} ${CARD_H / 2 - 10}) scale(1.1) translate(-50 -50)">${symbol}</g>`
-    : '';
+/** Placeholder for cards without an illustration (courts, style "généré"). */
+function renderPlaceholder(label: string, color: string, symbol: string, h: number): string {
   return (
-    `<rect x="34" y="44" width="${CARD_W - 68}" height="${CARD_H - 88}" rx="10" ` +
+    `<rect x="34" y="${0.126 * h}" width="${CARD_W - 68}" height="${0.75 * h}" rx="10" ` +
     `fill="none" stroke="${color}" stroke-width="2" stroke-dasharray="5 5" opacity="0.5"/>` +
-    glyph +
-    `<text x="${CARD_W / 2}" y="${CARD_H / 2 + 70}" text-anchor="middle" ` +
+    `<g transform="translate(${CARD_W / 2} ${h / 2 - 10}) scale(1.1) translate(-50 -50)">${symbol}</g>` +
+    `<text x="${CARD_W / 2}" y="${h / 2 + 70}" text-anchor="middle" ` +
     `font-family="Georgia, serif" font-size="40" font-weight="700" fill="${color}">${label}</text>`
   );
 }
 
 /** Render a card to a standalone SVG string. */
 export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
+  const h = opts.height ?? DEFAULT_H;
   const tpl = opts.pipTemplate ?? classicTemplate;
   const pipSize = opts.pipSize ?? PIP_SIZE;
-  const vid = (s: Suit): string | undefined => opts.suitVariants?.[s];
   let body = '';
   let corners = '';
 
   switch (card.kind) {
     case 'pip':
-      corners = cornerIndex(cardLabel(card), card.suit, vid(card.suit));
-      body = renderPips(card.suit, card.rank, tpl, vid(card.suit), pipSize);
+      corners = cornerIndex(card, opts, h);
+      body = renderPips(card, tpl, pipSize, opts, h);
       break;
     case 'court': {
-      const img = courtImage(card.suit, card.rank);
+      const img = courtImage(card.suit, card.rank, opts.courtStyle);
       if (img) {
-        body = renderImage(cardId(card), img);
+        body = renderImage(cardId(card), img, h);
       } else {
-        corners = cornerIndex(cardLabel(card), card.suit, vid(card.suit));
-        body = renderPlaceholder(
-          cardLabel(card),
-          suitColor(card.suit),
-          suitSymbol(card.suit, vid(card.suit)),
-        );
+        corners = cornerIndex(card, opts, h);
+        body = renderPlaceholder(cardLabel(card), suitColor(card.suit), symbolFor(card.suit, opts), h);
       }
       break;
     }
     case 'atout':
-      body = renderImage(cardId(card), atoutImage(card.number));
+      body = renderImage(cardId(card), atoutImage(card.number), h);
       break;
     case 'excuse':
-      body = renderImage(cardId(card), excuseImage());
+      body = renderImage(cardId(card), excuseImage(), h);
       break;
   }
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
-    `viewBox="0 0 ${CARD_W} ${CARD_H}" width="${CARD_W}" height="${CARD_H}" role="img">` +
-    `<rect x="2" y="2" width="${CARD_W - 4}" height="${CARD_H - 4}" rx="16" ` +
+    `viewBox="0 0 ${CARD_W} ${h}" width="${CARD_W}" height="${h}" role="img">` +
+    `<rect x="2" y="2" width="${CARD_W - 4}" height="${h - 4}" rx="16" ` +
     `fill="#ffffff" stroke="#d9d4c8" stroke-width="2"/>` +
     body +
     corners +

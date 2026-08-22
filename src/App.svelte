@@ -6,6 +6,7 @@
     DECK_SIZES,
   } from './lib/model/deck';
   import { editor } from './lib/editor/store.svelte';
+  import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
 
@@ -41,6 +42,15 @@
     </div>
 
     <span class="count">{deck.length} cartes</span>
+
+    <button
+      class="theme-toggle"
+      onclick={toggleTheme}
+      aria-label={theme.mode === 'dark' ? 'Passer en mode clair' : 'Passer en mode nuit'}
+      title={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}
+    >
+      {theme.mode === 'dark' ? '☀️' : '🌙'}
+    </button>
   </header>
 
   <div class="body" class:strip={editor.viewMode === 'strip'}>
@@ -137,6 +147,20 @@
     margin-left: auto;
     opacity: 0.6;
     font-size: 0.85rem;
+  }
+
+  .theme-toggle {
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: inherit;
+    cursor: pointer;
+  }
+  .theme-toggle:hover {
+    border-color: var(--accent);
   }
 
   .seg {
