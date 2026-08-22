@@ -96,7 +96,10 @@
 
 <div class="app">
   <header>
-    <div class="brand">🂡 <strong>Tarotier</strong></div>
+    <div class="brand">
+      <img class="logo" src="/marseille-bb.webp" alt="" />
+      <strong>Tarotier</strong>
+    </div>
 
     <div class="seg" role="group" aria-label="Onglet">
       <button class:active={editor.tab === 'cartes'} onclick={() => (editor.tab = 'cartes')}>Cartes</button>
@@ -125,7 +128,11 @@
       aria-label={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}
       title={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}
     >
-      {theme.mode === 'dark' ? '☀️' : '🌙'}
+      {#if theme.mode === 'dark'}
+        <img class="sun" src="/marseille-bb.webp" alt="" />
+      {:else}
+        🌙
+      {/if}
     </button>
   </header>
 
@@ -310,6 +317,20 @@
   }
   .brand {
     font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .brand .logo {
+    height: 30px;
+    width: 30px;
+    object-fit: contain;
+  }
+  .theme-toggle .sun {
+    height: 20px;
+    width: 20px;
+    object-fit: contain;
+    display: block;
   }
   .count {
     opacity: 0.6;
