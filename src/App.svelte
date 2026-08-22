@@ -4,9 +4,11 @@
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
-  import { FORMATS, type FormatId } from './lib/render/card';
-  import { PIP_TEMPLATES } from './lib/render/pipLayouts';
+  import { renderCardSVG, FORMATS, type FormatId } from './lib/render/card';
+  import { PIP_TEMPLATES, pipTemplate } from './lib/render/pipLayouts';
   import { BACK_TEMPLATES, renderBackSVG } from './lib/render/back';
+  import { exportPng, exportSheetPng } from './lib/export/png';
+  import { saveProject, loadProjectFromFile } from './lib/editor/project';
 
   const COURT_STYLES = [
     { id: 'marseille', label: 'Marseille' },
@@ -41,6 +43,49 @@
     if (editor.tab !== 'cartes' || editor.viewMode !== 'strip') return;
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
+  }
+
+  function cardOpts() {
+    return {
+      height: FORMATS[editor.format].h,
+      pipTemplate: pipTemplate(editor.pipTemplateId),
+      suitVariants: editor.suitVariants,
+      customSuitImages: editor.customSuitImages,
+      pipSize: editor.pipSize,
+      courtStyle: editor.courtStyle,
+    };
+  }
+
+  let busy = $state('');
+  async function run(label: string, fn: () => Promise<void>) {
+    busy = label;
+    try {
+      await fn();
+    } catch (e) {
+      alert('Échec : ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      busy = '';
+    }
+  }
+
+  const exportCard = () =>
+    selectedCard &&
+    run('Export carte…', () => exportPng(renderCardSVG(selectedCard, cardOpts()), `${cardId(selectedCard)}.png`));
+  const exportSheet = () =>
+    run('Export planche…', () =>
+      exportSheetPng(
+        deck.map((c) => renderCardSVG(c, cardOpts())),
+        editor.deckSize >= 78 ? 14 : 13,
+        `tarotier-${editor.deckSize}.png`,
+      ),
+    );
+  const exportBack = () => run('Export dos…', () => exportPng(backSvg, 'tarotier-dos.png'));
+
+  function onLoadFile(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) loadProjectFromFile(file).catch((err) => alert('Projet invalide : ' + err.message));
+    input.value = '';
   }
 </script>
 
@@ -81,6 +126,14 @@
   <div class="body" class:full={editor.tab === 'dos'}>
     <!-- Left: controls -->
     <aside class="rail left">
+      <section class="ctl">
+        <h2>Projet {#if busy}<span class="val">{busy}</span>{/if}</h2>
+        <div class="opts">
+          <button class="opt" onclick={() => saveProject()}>💾 Enregistrer</button>
+          <label class="opt file">📂 Ouvrir<input type="file" accept="application/json" onchange={onLoadFile} /></label>
+        </div>
+      </section>
+
       {#if editor.tab === 'cartes'}
         <section class="ctl">
           <h2>Format</h2>
@@ -121,6 +174,14 @@
             {/each}
           </div>
         </section>
+
+        <section class="ctl">
+          <h2>Export PNG</h2>
+          <div class="opts">
+            <button class="opt" onclick={exportCard} disabled={!selectedCard || !!busy}>Carte</button>
+            <button class="opt" onclick={exportSheet} disabled={!!busy}>Planche</button>
+          </div>
+        </section>
       {:else}
         <section class="ctl">
           <h2>Motif du dos</h2>
@@ -144,6 +205,12 @@
                 {FORMATS[f].label}
               </button>
             {/each}
+          </div>
+        </section>
+        <section class="ctl">
+          <h2>Export PNG</h2>
+          <div class="opts">
+            <button class="opt" onclick={exportBack} disabled={!!busy}>Exporter le dos</button>
           </div>
         </section>
       {/if}
@@ -325,6 +392,13 @@
     background: var(--accent);
     border-color: var(--accent);
     color: #fff;
+  }
+  .opt:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .opt.file input {
+    display: none;
   }
   .ctl input[type='range'] {
     width: 100%;
