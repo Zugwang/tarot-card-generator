@@ -19,12 +19,20 @@ Set **English pattern** (SVG vectoriel) issu de Wikimedia Commons — catégorie
 « SVG English pattern playing cards ». Motif de cartes anglais du domaine public.
 Valet/Dame/Roi × 4 (pas de Cavalier dans le jeu de 52).
 
-## Figures Marseille / Grimaud (Valet / Cavalier / Dame / Roi)
+## Figures Marseille (`public/art/courts/marseille/`)
 
-Pas encore d'illustrations : rendu par un placeholder généré. Aucune source
-Tarot de Marseille propre et complète des 16 figures n'existe sur Wikimedia
-Commons (les mineures 2–10 du Marseille sont des cartes à points, générées par
-le moteur de pips).
+Set « Tarot de Marseille (Single Cards) » de Wikimedia Commons (domaine public) :
+Valet/Cavalier/Dame/Roi × Épées(pique)/Coupes(cœur)/Deniers(carreau)/Bâtons(trèfle).
+
+## Figures « Trad 1898 » (`public/art/courts/grimaud/`)
+
+Tarot nouveau Grimaud 1898 (domaine public), 16 figures. Source : Wikimedia
+Commons — catégorie « Tarot nouveau - Grimaud - 1898 ».
+
+## Style « Blanc »
+
+Aucune image : carte vierge avec index seul, à composer en mode libre. Les
+mineures 2–10 du Marseille sont des cartes à points, générées par le moteur de pips.
 
 ## Atouts « Trad 1898 » (`public/art/atouts-grimaud/`)
 

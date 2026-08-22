@@ -48,12 +48,22 @@ Statut au 2026-08-22.
 - [x] Template pips « super-espacé »
 - [x] Mode libre : « Regénérer depuis le modèle » ; Suppr/Échap au clavier
 
-## Idées / raffinements
+## Fait (suite 4)
 
-- [ ] Document Model : finir l'unification (renderer 100% élément ; le mode libre
-      édite la même liste que la génération — aujourd'hui décomposition one-shot).
-- [ ] Mode libre : snap/guides ; multi-sélection ; copier/coller ; formes/cadres.
-- [ ] Export : **ZIP** de fichiers séparés (dépend de JSZip).
-- [ ] Dos : motif dérivé de l'enseigne ; plus de motifs.
-- [ ] Atouts : second style (Grimaud/Conver) sélectionnable.
-- [ ] Impression (plus tard) : dimensions physiques, bleed, coupe, recto-verso, PDF.
+- [x] Export **ZIP** (fichiers séparés PNG/SVG, JSZip en lazy-chunk)
+- [x] Atouts : 2ᵉ style « Trad 1898 » (Grimaud) sélectionnable
+- [x] Dos : motifs chevrons/étoiles + motif dérivé de l'enseigne
+- [x] Mode libre : **formes** (rect/cercle/ligne), **copier/coller** (Ctrl+C/V),
+      **snap** au centre + guides
+
+## Reste (gros chantiers, volontairement non faits)
+
+- [ ] **Multi-sélection** au canvas (marquee, déplacement/suppression groupés) —
+      demande de retravailler le modèle de sélection (aujourd'hui : 1 calque).
+- [ ] **Document Model, unification 100%** : faire passer AUSSI le rendu des cartes
+      générées par la liste d'`Element` (aujourd'hui : le générateur émet des
+      calques pour la décomposition, mais `renderCardSVG` rend encore en direct).
+      Risque de régression sur le cadrage des images → à faire prudemment.
+- [ ] **Impression pro** : PDF (dépend de pdf-lib), dimensions physiques mm,
+      bleed/safe/crop marks, recto-verso, CMYK. Chantier à part entière ;
+      l'utilisateur a priorisé écran/PNG. À cadrer séparément.
