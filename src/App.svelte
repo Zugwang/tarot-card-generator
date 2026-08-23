@@ -9,7 +9,8 @@
     pasteLayer,
     setRouge,
     setNoire,
-    randomPalette,
+    slightlyRandomPalette,
+    trulyRandomPalette,
     standardPalette,
   } from './lib/editor/store.svelte';
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
@@ -195,7 +196,8 @@
             <label class="sw">Noire<input type="color" value={editor.suitColors.pique} oninput={(e) => setNoire(e.currentTarget.value)} /></label>
           </div>
           <div class="opts" style="margin-top:.5rem">
-            <button class="opt" onclick={randomPalette}>🎲 Random</button>
+            <button class="opt" onclick={slightlyRandomPalette}>🎲 Slightly random</button>
+            <button class="opt" onclick={trulyRandomPalette}>🎲 Random</button>
             <button class="opt" onclick={standardPalette}>Standard</button>
           </div>
         </section>

@@ -48,6 +48,14 @@ const P = {
 const fill = (d: string, color: string) => `<path d="${d}" fill="${color}"/>`;
 const outline = (d: string, color: string) =>
   `<path d="${d}" fill="none" stroke="${color}" stroke-width="8" stroke-linejoin="round"/>`;
+const outlineBold = (d: string, color: string) =>
+  `<path d="${d}" fill="none" stroke="${color}" stroke-width="13" stroke-linejoin="round"/>`;
+const duo = (d: string, color: string) =>
+  `<path d="${d}" fill="${color}"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="4" stroke-linejoin="round"/>`;
+const borde = (d: string, color: string) =>
+  `<path d="${d}" fill="${color}" stroke="#161616" stroke-width="4" stroke-linejoin="round"/>`;
+const ombre = (d: string, color: string) =>
+  `<path d="${d}" fill="#00000030" transform="translate(6 6)"/><path d="${d}" fill="${color}"/>`;
 
 // Tarot (Latin) suit glyphs — épée / coupe / denier / bâton.
 function epee(c: string): string {
@@ -86,11 +94,11 @@ function baton(c: string): string {
   );
 }
 
-/** Build a club (trèfle) from three lobes + a stem. */
-function club(color: string, r: number, top: number, sideY: number, spread: number): string {
+/** Build a club (trèfle) from three lobes + a stem, with fill/stroke control. */
+function club2(fillC: string, strokeC: string, sw: number, r: number, top: number, sideY: number, spread: number): string {
   const stemTop = sideY - 2;
   return (
-    `<g fill="${color}">` +
+    `<g fill="${fillC}" stroke="${strokeC}" stroke-width="${sw}">` +
     `<circle cx="50" cy="${top}" r="${r}"/>` +
     `<circle cx="${50 - spread}" cy="${sideY}" r="${r}"/>` +
     `<circle cx="${50 + spread}" cy="${sideY}" r="${r}"/>` +
@@ -98,32 +106,41 @@ function club(color: string, r: number, top: number, sideY: number, spread: numb
     `</g>`
   );
 }
+const club = (c: string, r: number, top: number, sideY: number, spread: number) =>
+  club2(c, 'none', 0, r, top, sideY, spread);
 
 // ---- variants per suit -------------------------------------------------------
 
+function pathVariants(
+  main: string,
+  alt: string,
+  tarot: { id: string; label: string; fn: (c: string) => string },
+): SuitVariant[] {
+  return [
+    { id: 'plein', label: 'Plein', render: (c) => fill(main, c) },
+    { id: 'contour', label: 'Contour', render: (c) => outline(main, c) },
+    { id: 'gras', label: 'Contour gras', render: (c) => outlineBold(main, c) },
+    { id: 'duo', label: 'Duo', render: (c) => duo(main, c) },
+    { id: 'borde', label: 'Bordé', render: (c) => borde(main, c) },
+    { id: 'ombre', label: 'Ombré', render: (c) => ombre(main, c) },
+    { id: 'alt', label: 'Forme alt.', render: (c) => fill(alt, c) },
+    { id: 'alt-contour', label: 'Alt. contour', render: (c) => outline(alt, c) },
+    { id: tarot.id, label: tarot.label, render: tarot.fn },
+  ];
+}
+
 export const SUIT_VARIANTS: Record<Suit, SuitVariant[]> = {
-  pique: [
-    { id: 'plein', label: 'Plein', render: (c) => fill(P.pique, c) },
-    { id: 'contour', label: 'Contour', render: (c) => outline(P.pique, c) },
-    { id: 'fin', label: 'Élancé', render: (c) => fill(P.piqueFin, c) },
-    { id: 'epee', label: 'Épée', render: (c) => epee(c) },
-  ],
-  coeur: [
-    { id: 'plein', label: 'Plein', render: (c) => fill(P.coeur, c) },
-    { id: 'contour', label: 'Contour', render: (c) => outline(P.coeur, c) },
-    { id: 'pointu', label: 'Pointu', render: (c) => fill(P.coeurPointu, c) },
-    { id: 'coupe', label: 'Coupe', render: (c) => coupe(c) },
-  ],
-  carreau: [
-    { id: 'plein', label: 'Plein', render: (c) => fill(P.carreau, c) },
-    { id: 'contour', label: 'Contour', render: (c) => outline(P.carreau, c) },
-    { id: 'courbe', label: 'Courbé', render: (c) => fill(P.carreauCourbe, c) },
-    { id: 'denier', label: 'Denier', render: (c) => denier(c) },
-  ],
+  pique: pathVariants(P.pique, P.piqueFin, { id: 'epee', label: 'Épée', fn: epee }),
+  coeur: pathVariants(P.coeur, P.coeurPointu, { id: 'coupe', label: 'Coupe', fn: coupe }),
+  carreau: pathVariants(P.carreau, P.carreauCourbe, { id: 'denier', label: 'Denier', fn: denier }),
   trefle: [
     { id: 'plein', label: 'Plein', render: (c) => club(c, 17, 30, 55, 18) },
     { id: 'fin', label: 'Fin', render: (c) => club(c, 14, 32, 54, 16) },
     { id: 'gras', label: 'Gras', render: (c) => club(c, 19, 28, 56, 20) },
+    { id: 'petit', label: 'Petit', render: (c) => club(c, 12, 34, 52, 14) },
+    { id: 'contour', label: 'Contour', render: (c) => club2('none', c, 6, 17, 30, 55, 18) },
+    { id: 'borde', label: 'Bordé', render: (c) => club2(c, '#161616', 4, 17, 30, 55, 18) },
+    { id: 'ombre', label: 'Ombré', render: (c) => `<g transform="translate(6 6)">${club2('#00000030', 'none', 0, 17, 30, 55, 18)}</g>${club(c, 17, 30, 55, 18)}` },
     { id: 'baton', label: 'Bâton', render: (c) => baton(c) },
   ],
 };

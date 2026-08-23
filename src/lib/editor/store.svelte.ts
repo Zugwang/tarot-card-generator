@@ -124,12 +124,21 @@ function hslHex(h: number, s: number, l: number): string {
 }
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
-/** Randomize card background, back color, and the red/black ink colors. */
-export function randomPalette(): void {
+/** Tasteful randomization (light bg, legible inks) — "slightly random". */
+export function slightlyRandomPalette(): void {
   editor.cardBg = hslHex(rand(0, 360), rand(12, 45), rand(90, 97));
   editor.back.color = hslHex(rand(0, 360), rand(40, 72), rand(28, 55));
   setRouge(hslHex(rand(0, 360), rand(55, 82), rand(38, 52)));
   setNoire(hslHex(rand(0, 360), rand(8, 40), rand(14, 30)));
+}
+
+/** Fully random — any hue, saturation and lightness for all four. */
+export function trulyRandomPalette(): void {
+  const any = () => hslHex(rand(0, 360), rand(0, 100), rand(0, 100));
+  editor.cardBg = any();
+  editor.back.color = any();
+  setRouge(any());
+  setNoire(any());
 }
 
 /** Reset the palette to the classic defaults. */

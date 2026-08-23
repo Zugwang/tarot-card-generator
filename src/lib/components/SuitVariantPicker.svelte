@@ -10,11 +10,23 @@
     trefle: 'Trèfle',
   };
 
-  function pickVariant(suit: Suit, variantId: string) {
-    setCustomSuitImage(suit, null); // vector variant overrides any uploaded PNG
-    setSuitVariant(suit, variantId);
-  }
+  let open = $state<Suit | null>(null);
+  let pos = $state({ x: 0, y: 0 });
 
+  function toggle(suit: Suit, e: MouseEvent) {
+    if (open === suit) {
+      open = null;
+      return;
+    }
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    pos = { x: r.right + 8, y: r.top };
+    open = suit;
+  }
+  function pick(suit: Suit, variantId: string) {
+    setCustomSuitImage(suit, null);
+    setSuitVariant(suit, variantId);
+    open = null;
+  }
   function onFile(suit: Suit, e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -33,42 +45,39 @@
     <div class="suit">
       <span class="suit-name">
         {SUIT_LABELS[suit]}
-        <input class="suitcolor" type="color" bind:value={editor.suitColors[suit]} title="Couleur de l'enseigne" aria-label="Couleur {SUIT_LABELS[suit]}" />
+        <input class="suitcolor" type="color" bind:value={editor.suitColors[suit]} aria-label="Couleur {SUIT_LABELS[suit]}" />
       </span>
-      <div class="variants" role="group" aria-label={SUIT_LABELS[suit]}>
-        {#each SUIT_VARIANTS[suit] as v}
-          <button
-            class="swatch"
-            class:active={!editor.customSuitImages[suit] && editor.suitVariants[suit] === v.id}
-            title={v.label}
-            aria-label="{SUIT_LABELS[suit]} — {v.label}"
-            onclick={() => pickVariant(suit, v.id)}
-          >
-            <svg viewBox="0 0 100 100" aria-hidden="true">
-              {@html suitSymbol(suit, v.id, editor.suitColors[suit])}
-            </svg>
-          </button>
-        {/each}
-
-        {#if editor.customSuitImages[suit]}
-          <button
-            class="swatch active custom"
-            title="PNG chargé — cliquer pour retirer"
-            aria-label="{SUIT_LABELS[suit]} — PNG personnalisé (retirer)"
-            onclick={() => setCustomSuitImage(suit, null)}
-          >
+      <div class="row2">
+        <button class="current" onclick={(e) => toggle(suit, e)} aria-haspopup="true" aria-expanded={open === suit}>
+          {#if editor.customSuitImages[suit]}
             <img src={editor.customSuitImages[suit]} alt="" />
-          </button>
-        {/if}
-
-        <label class="swatch upload" title="Charger un PNG">
-          <input type="file" accept="image/png,image/*" onchange={(e) => onFile(suit, e)} />
-          <span>＋</span>
-        </label>
+          {:else}
+            <svg viewBox="0 0 100 100" aria-hidden="true">{@html suitSymbol(suit, editor.suitVariants[suit], editor.suitColors[suit])}</svg>
+          {/if}
+          <span class="caret">▸</span>
+        </button>
+        <label class="up" title="Charger un PNG">＋<input type="file" accept="image/png,image/*" onchange={(e) => onFile(suit, e)} /></label>
       </div>
     </div>
   {/each}
 </div>
+
+{#if open}
+  <button class="backdrop" aria-label="Fermer" onclick={() => (open = null)}></button>
+  {@const s = open}
+  <div class="flyout" style="left:{pos.x}px; top:{pos.y}px">
+    {#each SUIT_VARIANTS[s] as v (v.id)}
+      <button
+        class="swatch"
+        class:active={!editor.customSuitImages[s] && editor.suitVariants[s] === v.id}
+        title={v.label}
+        onclick={() => pick(s, v.id)}
+      >
+        <svg viewBox="0 0 100 100" aria-hidden="true">{@html suitSymbol(s, v.id, editor.suitColors[s])}</svg>
+      </button>
+    {/each}
+  </div>
+{/if}
 
 <style>
   h2 {
@@ -79,7 +88,7 @@
     margin: 0 0 0.8rem;
   }
   .suit {
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
   }
   .suit-name {
     font-size: 0.85rem;
@@ -98,22 +107,81 @@
     background: transparent;
     cursor: pointer;
   }
-  .variants {
+  .row2 {
     display: flex;
     gap: 0.4rem;
-    flex-wrap: wrap;
+  }
+  .current {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: inherit;
+    cursor: pointer;
+  }
+  .current:hover {
+    border-color: var(--accent);
+  }
+  .current svg,
+  .current img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+  }
+  .caret {
+    margin-left: auto;
+    opacity: 0.5;
+  }
+  .up {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0.7;
+  }
+  .up input {
+    display: none;
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
+    z-index: 40;
+    cursor: default;
+  }
+  .flyout {
+    position: fixed;
+    z-index: 41;
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    gap: 0.4rem;
+    padding: 0.6rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    max-height: 70vh;
+    overflow: auto;
   }
   .swatch {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     padding: 6px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--panel);
     cursor: pointer;
-    transition: border-color 0.1s, transform 0.1s;
-    display: grid;
-    place-items: center;
   }
   .swatch:hover {
     transform: translateY(-1px);
@@ -122,21 +190,9 @@
     border-color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent);
   }
-  .swatch svg,
-  .swatch img {
+  .swatch svg {
     width: 100%;
     height: 100%;
-    object-fit: contain;
     display: block;
-  }
-  .swatch.custom img {
-    border-radius: 4px;
-  }
-  .upload {
-    font-size: 1.2rem;
-    opacity: 0.6;
-  }
-  .upload input {
-    display: none;
   }
 </style>
