@@ -32,6 +32,8 @@ export interface RenderOptions {
   suitColors?: Partial<Record<Suit, string>>;
   customSuitImages?: Partial<Record<Suit, string | null>>;
   imageFit?: 'meet' | 'slice';
+  /** Card background color (default white). */
+  cardBg?: string;
   pipSize?: number;
   /** Court set: 'marseille' | 'grimaud' | 'poker' | 'blanc'. */
   courtStyle?: string;
@@ -242,7 +244,7 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
     `viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img">` +
-    `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="16" fill="#ffffff" stroke="#d9d4c8" stroke-width="2"/>` +
+    `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="16" fill="${opts.cardBg ?? '#ffffff'}" stroke="#d9d4c8" stroke-width="2"/>` +
     body +
     corners +
     overlay +

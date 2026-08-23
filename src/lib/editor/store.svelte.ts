@@ -31,6 +31,8 @@ export const editor = $state({
   suitVariants: defaultVariants(),
   /** Per-suit symbol color (overrides the default red/black). */
   suitColors: { ...SUIT_COLORS } as Record<Suit, string>,
+  /** Card background color. */
+  cardBg: '#ffffff',
   /** Per-suit uploaded PNG (data-URL) overriding the vector symbol. */
   customSuitImages: nullImages(),
   /** How illustrations (atouts/figures) fit the card: 'meet' (entier) or 'slice' (rempli). */
@@ -100,6 +102,44 @@ export function duplicateLayer(cardId: string, layerId: string): void {
   editor.freeLayerId = copy.id;
 }
 
+// ---- deck palette -----------------------------------------------------------
+
+export function setRouge(c: string): void {
+  editor.suitColors.coeur = c;
+  editor.suitColors.carreau = c;
+}
+export function setNoire(c: string): void {
+  editor.suitColors.pique = c;
+  editor.suitColors.trefle = c;
+}
+
+function hslHex(h: number, s: number, l: number): string {
+  s /= 100;
+  l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const to = (x: number) => Math.round(x * 255).toString(16).padStart(2, '0');
+  return `#${to(f(0))}${to(f(8))}${to(f(4))}`;
+}
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+/** Randomize card background, back color, and the red/black ink colors. */
+export function randomPalette(): void {
+  editor.cardBg = hslHex(rand(0, 360), rand(12, 45), rand(90, 97));
+  editor.back.color = hslHex(rand(0, 360), rand(40, 72), rand(28, 55));
+  setRouge(hslHex(rand(0, 360), rand(55, 82), rand(38, 52)));
+  setNoire(hslHex(rand(0, 360), rand(8, 40), rand(14, 30)));
+}
+
+/** Reset the palette to the classic defaults. */
+export function standardPalette(): void {
+  editor.cardBg = '#ffffff';
+  editor.back.color = '#8a1f2b';
+  setRouge('#c0392b');
+  setNoire('#161616');
+}
+
 /** Effective card dimensions from the current format choice. */
 export function formatWH(): { w: number; h: number } {
   if (editor.format === 'libre') {
@@ -118,6 +158,7 @@ export function cardRenderOptions(): RenderOptions {
     pipTemplate: pipTemplate(editor.pipTemplateId),
     suitVariants: editor.suitVariants,
     suitColors: editor.suitColors,
+    cardBg: editor.cardBg,
     customSuitImages: editor.customSuitImages,
     pipSize: editor.pipSize,
     courtStyle: editor.courtStyle,

@@ -14,6 +14,7 @@ const KEYS = [
   'customFormat',
   'suitVariants',
   'suitColors',
+  'cardBg',
   'customSuitImages',
   'pipSize',
   'pipTemplateId',

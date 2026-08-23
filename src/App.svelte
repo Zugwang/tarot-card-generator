@@ -1,6 +1,17 @@
 <script lang="ts">
   import { generateDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
-  import { editor, cardRenderOptions, ensureExploded, removeLayer, copyLayer, pasteLayer } from './lib/editor/store.svelte';
+  import {
+    editor,
+    cardRenderOptions,
+    ensureExploded,
+    removeLayer,
+    copyLayer,
+    pasteLayer,
+    setRouge,
+    setNoire,
+    randomPalette,
+    standardPalette,
+  } from './lib/editor/store.svelte';
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
@@ -175,6 +186,20 @@
       </section>
 
       {#if editor.tab === 'cartes'}
+        <section class="ctl">
+          <h2>Palette</h2>
+          <div class="palette">
+            <label class="sw">Fond<input type="color" bind:value={editor.cardBg} /></label>
+            <label class="sw">Dos<input type="color" bind:value={editor.back.color} /></label>
+            <label class="sw">Rouge<input type="color" value={editor.suitColors.coeur} oninput={(e) => setRouge(e.currentTarget.value)} /></label>
+            <label class="sw">Noire<input type="color" value={editor.suitColors.pique} oninput={(e) => setNoire(e.currentTarget.value)} /></label>
+          </div>
+          <div class="opts" style="margin-top:.5rem">
+            <button class="opt" onclick={randomPalette}>🎲 Random</button>
+            <button class="opt" onclick={standardPalette}>Standard</button>
+          </div>
+        </section>
+
         <section class="ctl">
           <h2>Format</h2>
           <div class="opts">
@@ -471,6 +496,28 @@
     align-items: center;
     gap: 0.4rem;
     font-size: 0.82rem;
+  }
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+  }
+  .palette .sw {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.72rem;
+    opacity: 0.85;
+  }
+  .palette .sw input[type='color'] {
+    width: 100%;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
   }
   .dims {
     display: flex;
