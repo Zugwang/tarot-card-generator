@@ -56,6 +56,12 @@ Statut au 2026-08-22.
 - [x] Mode libre : **formes** (rect/cercle/ligne), **copier/coller** (Ctrl+C/V),
       **snap** au centre + guides
 
+## Fait (suite 5)
+
+- [x] Palette de deck (fond carte / dos / rouge / noire) + Random + Standard
+- [x] Polices d'incrustation texte (set OFL self-hébergé, export autonome)
+- [x] Positionnements « Colonne » et « Arc » (8 templates)
+
 ## Reste (gros chantiers, volontairement non faits)
 
 - [ ] **Multi-sélection** au canvas (marquee, déplacement/suppression groupés) —
