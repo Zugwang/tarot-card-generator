@@ -7,6 +7,7 @@ import { suitColor, suitSymbol } from './suits';
 import { classicTemplate, type PipTemplate } from './pipLayouts';
 import { atoutImage, excuseImage, courtImage } from './illustrations';
 import { backBase } from './back';
+import { fontFamily } from './fonts';
 import { type FreeCard, type FreeLayer, newLayerId } from '../editor/free';
 
 export const CARD_W = 250; // default width
@@ -82,7 +83,7 @@ function renderLayer(layer: FreeLayer, w: number, h: number): string {
     return placeSymbol(suitSymbol(layer.suit, layer.variant, color), cx, cy, layer.size, layer.rot as 0 | 180);
   }
   if (layer.type === 'text') {
-    return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})"><text text-anchor="middle" dominant-baseline="central" font-family="Georgia, serif" font-size="${layer.size}" fill="${layer.color}">${escapeXml(layer.text)}</text></g>`;
+    return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})"><text text-anchor="middle" dominant-baseline="central" font-family="${fontFamily(layer.font)}" font-size="${layer.size}" fill="${layer.color}">${escapeXml(layer.text)}</text></g>`;
   }
   if (layer.type === 'shape') {
     const hs = layer.size / 2;

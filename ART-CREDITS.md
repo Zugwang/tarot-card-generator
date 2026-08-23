@@ -38,3 +38,10 @@ mineures 2–10 du Marseille sont des cartes à points, générées par le moteu
 
 Tarot nouveau Grimaud 1898 (« Trumps » 01–21 + Excuse), domaine public.
 Source : Wikimedia Commons — catégorie « Tarot nouveau - Grimaud - 1898 ».
+
+## Polices (`public/fonts/`)
+
+Set d'incrustation texte, self-hébergé en woff2 (licence SIL Open Font License) :
+Cinzel, Bebas Neue, Pirata One, Rye, Major Mono Display. Source : Google Fonts
+(OFL). À l'export, la police utilisée est inlinée en data-URL (@font-face) pour
+un SVG/PNG autonome.

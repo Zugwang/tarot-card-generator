@@ -3,6 +3,7 @@
   import { suitColor, suitSymbol } from '../render/suits';
   import { editor, ensureFree, reorderLayer, duplicateLayer, regenerateCard } from '../editor/store.svelte';
   import { newSuitLayer, newTextLayer, newImageLayer, newShapeLayer, type FreeLayer } from '../editor/free';
+  import { FONTS } from '../render/fonts';
 
   let { card }: { card: Card } = $props();
 
@@ -91,6 +92,11 @@
     <h2>Propriétés</h2>
     {#if selected.type === 'text'}
       <input class="text" type="text" bind:value={selected.text} placeholder="Texte" />
+      <select class="font" bind:value={selected.font}>
+        {#each FONTS as f}
+          <option value={f.id} style="font-family:{f.family}">{f.label}</option>
+        {/each}
+      </select>
       <label class="row">Couleur <input type="color" bind:value={selected.color} /></label>
     {/if}
     {#if selected.type === 'suit'}
@@ -197,7 +203,8 @@
   .del:hover {
     color: var(--accent);
   }
-  .text {
+  .text,
+  .font {
     width: 100%;
     padding: 0.4rem 0.5rem;
     border: 1px solid var(--border);

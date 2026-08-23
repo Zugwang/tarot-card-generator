@@ -3,6 +3,31 @@
 // otherwise they don't load inside an <img>-loaded SVG (and would taint canvas).
 
 import { downloadBlob } from './download';
+import { FONTS } from '../render/fonts';
+
+/** Inline any used self-hosted font as a data-URL @font-face so exports are portable. */
+async function inlineFonts(svg: string): Promise<string> {
+  const faces: string[] = [];
+  await Promise.all(
+    FONTS.filter((f) => f.url && svg.includes(`font-family="${f.family}"`)).map(async (f) => {
+      const blob = await (await fetch(f.url!)).blob();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+      faces.push(`@font-face{font-family:'${f.family}';src:url(${dataUrl}) format('woff2');}`);
+    }),
+  );
+  if (!faces.length) return svg;
+  return svg.replace(/^(<svg[^>]*>)/, `$1<style>${faces.join('')}</style>`);
+}
+
+/** Inline images + fonts: makes an SVG string fully self-contained for export. */
+export async function inlineAssets(svg: string): Promise<string> {
+  return inlineFonts(await inlineImages(svg));
+}
 
 /** Fetch every same-origin/http image ref in the SVG and inline it as data-URL. */
 export async function inlineImages(svg: string): Promise<string> {
@@ -54,7 +79,7 @@ function loadImage(svg: string): Promise<HTMLImageElement> {
 
 /** Rasterize one SVG string to a PNG blob at the given pixel scale. */
 export async function svgToPngBlob(svg: string, scale = 3): Promise<Blob> {
-  const inlined = await inlineImages(svg);
+  const inlined = await inlineAssets(svg);
   const { w, h } = svgSize(inlined);
   const img = await loadImage(inlined);
   const canvas = document.createElement('canvas');
@@ -79,7 +104,7 @@ export async function exportSheetPng(
   filename: string,
   scale = 1.6,
 ): Promise<void> {
-  const inlined = await Promise.all(svgs.map(inlineImages));
+  const inlined = await Promise.all(svgs.map(inlineAssets));
   const imgs = await Promise.all(inlined.map(loadImage));
   const { w, h } = svgSize(inlined[0]);
   const pad = 8;

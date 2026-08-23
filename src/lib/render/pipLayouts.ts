@@ -117,6 +117,19 @@ const diagonalLayout: PipLayout = (n) => {
   });
 };
 
+const columnLayout: PipLayout = (n) => {
+  if (n <= 1) return [p(C, C)];
+  return range(n).map((i) => p(C, 0.12 + 0.76 * (i / (n - 1))));
+};
+
+const arcLayout: PipLayout = (n) => {
+  if (n <= 1) return [p(C, C)];
+  return range(n).map((i) => {
+    const t = i / (n - 1);
+    return p(0.15 + 0.7 * t, 0.26 + 0.24 * Math.sin(Math.PI * t));
+  });
+};
+
 // ---- registry ---------------------------------------------------------------
 
 export const classicTemplate: PipTemplate = { id: 'classic', label: 'Classique', layout: classicLayout };
@@ -128,6 +141,8 @@ export const PIP_TEMPLATES: PipTemplate[] = [
   { id: 'circular', label: 'Circulaire', layout: circularLayout },
   { id: 'grid', label: 'Grille', layout: gridLayout },
   { id: 'diagonal', label: 'Diagonale', layout: diagonalLayout },
+  { id: 'column', label: 'Colonne', layout: columnLayout },
+  { id: 'arc', label: 'Arc', layout: arcLayout },
 ];
 
 export function pipTemplate(id: string | undefined): PipTemplate {

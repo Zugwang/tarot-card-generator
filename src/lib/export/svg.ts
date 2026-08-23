@@ -1,7 +1,7 @@
 // SVG export (lossless master format). Images are inlined as data-URLs so the
 // file is self-contained and opens anywhere.
 
-import { inlineImages, svgSize } from './png';
+import { inlineAssets, svgSize } from './png';
 import { downloadBlob } from './download';
 
 function download(svg: string, filename: string) {
@@ -10,12 +10,12 @@ function download(svg: string, filename: string) {
 
 /** Export a single card/back SVG (self-contained). */
 export async function exportSvg(svg: string, filename: string): Promise<void> {
-  download(await inlineImages(svg), filename);
+  download(await inlineAssets(svg), filename);
 }
 
 /** Compose many card SVGs into one contact-sheet SVG. */
 export async function exportSheetSvg(svgs: string[], cols: number, filename: string): Promise<void> {
-  const inlined = await Promise.all(svgs.map(inlineImages));
+  const inlined = await Promise.all(svgs.map(inlineAssets));
   const { w, h } = svgSize(inlined[0]);
   const pad = 8;
   const rows = Math.ceil(inlined.length / cols);

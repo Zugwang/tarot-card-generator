@@ -15,7 +15,7 @@ export interface BaseLayer {
 export type ShapeKind = 'rect' | 'ellipse' | 'line';
 export type FreeLayer =
   | (BaseLayer & { type: 'suit'; suit: Suit; variant?: string; color?: string })
-  | (BaseLayer & { type: 'text'; text: string; color: string })
+  | (BaseLayer & { type: 'text'; text: string; color: string; font?: string })
   | (BaseLayer & { type: 'image'; href: string })
   | (BaseLayer & { type: 'shape'; shape: ShapeKind; fill: string; stroke: string; strokeWidth: number });
 
@@ -40,7 +40,7 @@ export function newSuitLayer(suit: Suit): FreeLayer {
   return { ...base(), type: 'suit', suit };
 }
 export function newTextLayer(): FreeLayer {
-  return { ...base(), type: 'text', text: 'Texte', color: '#161616', size: 28 };
+  return { ...base(), type: 'text', text: 'Texte', color: '#161616', size: 28, font: 'georgia' };
 }
 export function newImageLayer(href: string): FreeLayer {
   return { ...base(), type: 'image', href, size: 90 };
