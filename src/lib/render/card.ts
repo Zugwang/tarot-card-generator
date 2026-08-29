@@ -40,6 +40,8 @@ export interface RenderOptions {
   courtStyle?: string;
   /** Atout set: 'marseille' | 'grimaud'. */
   atoutStyle?: string;
+  /** Font id (see fonts.ts) for the generated corner indices. */
+  indexFont?: string;
   /** Back motif (used by the 'back' card). */
   backConfig?: { templateId: string; color: string; suit?: Suit; variant?: string };
   /** Free-mode override for this card (layers on top of / instead of the base). */
@@ -104,9 +106,10 @@ function cornerIndex(card: Card & { suit: Suit }, opts: RenderOptions, w: number
   const label = cardLabel(card);
   const color = colorFor(card.suit, opts);
   const mini = symbolFor(card.suit, opts, color);
+  const ff = fontFamily(opts.indexFont);
   const block = (x: number, y: number, rot: number) =>
     `<g transform="translate(${round(x)} ${round(y)}) rotate(${rot})">` +
-    `<text x="0" y="0" text-anchor="middle" font-family="Georgia, serif" font-size="26" font-weight="600" fill="${color}">${label}</text>` +
+    `<text x="0" y="0" text-anchor="middle" font-family="${ff}" font-size="26" font-weight="600" fill="${color}">${label}</text>` +
     `<g transform="translate(-11 6) scale(0.22)">${mini}</g></g>`;
   return block(0.104 * w, 0.097 * h, 0) + block(w - 0.104 * w, h - 0.097 * h, 180);
 }
@@ -148,7 +151,7 @@ function renderImage(uid: string, href: string, w: number, h: number, fit: 'meet
 // ---- generator: card → free-mode layers (Document Model amorce) --------------
 
 const suitL = (suit: Suit, variant: string | undefined, color: string, x: number, y: number, size: number, rot: number): FreeLayer => ({ id: newLayerId(), type: 'suit', suit, variant, color, x, y, size, rot });
-const textL = (text: string, color: string, x: number, y: number, size: number, rot: number): FreeLayer => ({ id: newLayerId(), type: 'text', text, color, x, y, size, rot });
+const textL = (text: string, color: string, x: number, y: number, size: number, rot: number, font?: string): FreeLayer => ({ id: newLayerId(), type: 'text', text, color, x, y, size, rot, font });
 const imageL = (href: string, x: number, y: number, size: number, rot: number): FreeLayer => ({ id: newLayerId(), type: 'image', href, x, y, size, rot });
 
 /** Emit a card as free-mode layers (used to "explode" a generated card). */
@@ -167,8 +170,9 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
   };
   const corners = (suit: Suit, label: string) => {
     const color = colorFor(suit, opts);
-    els.push(textL(label, color, 0.104, 0.088, 26, 0), sym(suit, 0.104 * w, 0.14 * h, 22, 0));
-    els.push(textL(label, color, 1 - 0.104, 1 - 0.088, 26, 180), sym(suit, w - 0.104 * w, h - 0.14 * h, 22, 180));
+    const font = opts.indexFont;
+    els.push(textL(label, color, 0.104, 0.088, 26, 0, font), sym(suit, 0.104 * w, 0.14 * h, 22, 0));
+    els.push(textL(label, color, 1 - 0.104, 1 - 0.088, 26, 180, font), sym(suit, w - 0.104 * w, h - 0.14 * h, 22, 180));
   };
 
   switch (card.kind) {
@@ -242,13 +246,19 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
 
   const overlay = free?.layers.length ? free.layers.map((l) => renderLayer(l, w, h)).join('') : '';
 
+  // Clip all content to the rounded card shape so overlay images / free layers
+  // can't spill past the border (unified rounded corners on every card).
+  const clipId = `cardclip-${cardId(card)}`;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
     `viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img">` +
+    `<defs><clipPath id="${clipId}"><rect x="3" y="3" width="${w - 6}" height="${h - 6}" rx="15"/></clipPath></defs>` +
     `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="16" fill="${opts.cardBg ?? '#ffffff'}" stroke="#d9d4c8" stroke-width="2"/>` +
+    `<g clip-path="url(#${clipId})">` +
     body +
     corners +
     overlay +
+    `</g>` +
     `</svg>`
   );
 }

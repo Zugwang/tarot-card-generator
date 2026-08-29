@@ -20,6 +20,7 @@ const KEYS = [
   'pipTemplateId',
   'courtStyle',
   'atoutStyle',
+  'indexFont',
   'illustrationFit',
   'back',
   'freeCards',

@@ -7,14 +7,28 @@
 
 import type { Suit, CourtRank } from '../model/deck';
 
-export type AtoutStyle = 'marseille' | 'grimaud';
+export type AtoutStyle = 'marseille' | 'grimaud' | 'carrington' | 'oracle';
 
+// Léonora Carrington painted only part of the Major Arcana — map the trumps we
+// have; the rest fall back to the Marseille scans so the deck stays complete.
+const CARRINGTON = new Set([6, 10, 13, 14, 15, 16, 17, 18, 19, 21]);
+
+/** Image URL for atout number `n` (1..21) in the chosen style. */
 export function atoutImage(n: number, style?: string): string {
+  const nn = String(n).padStart(2, '0');
+  if (style === 'carrington') {
+    return CARRINGTON.has(n) ? `/art/atouts-carrington/${nn}.jpg` : atoutImage(n, 'marseille');
+  }
+  // Oracle de Marseille: numbered arcana served as webp (01..21 reachable in a
+  // 78-card tarot; the full 78-card set lives in the folder for later use).
+  if (style === 'oracle') return `/art/atouts-oracle/${nn}.webp`;
   const dir = style === 'grimaud' ? 'atouts-grimaud' : 'atouts';
-  return `/art/${dir}/${String(n).padStart(2, '0')}.jpg`;
+  return `/art/${dir}/${nn}.jpg`;
 }
 
 export function excuseImage(style?: string): string {
+  if (style === 'carrington') return '/art/atouts-carrington/fool.jpg';
+  if (style === 'oracle') return '/art/atouts-oracle/00.webp';
   return style === 'grimaud' ? '/art/atouts-grimaud/excuse.jpg' : '/art/atouts/fool.jpg';
 }
 

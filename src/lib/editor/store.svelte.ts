@@ -45,6 +45,8 @@ export const editor = $state({
   courtStyle: 'marseille' as string,
   /** Atout-illustration style: 'marseille' | 'grimaud'. */
   atoutStyle: 'marseille' as string,
+  /** Font id for the generated card indices (corner numbers/letters). */
+  indexFont: 'georgia' as string,
   selectedId: null as string | null,
   back: { templateId: 'quadrille', color: '#8a1f2b', suit: 'pique' as Suit },
   /** Free-mode overrides, keyed by card id. */
@@ -172,6 +174,7 @@ export function cardRenderOptions(): RenderOptions {
     pipSize: editor.pipSize,
     courtStyle: editor.courtStyle,
     atoutStyle: editor.atoutStyle,
+    indexFont: editor.indexFont,
     imageFit: editor.illustrationFit,
     backConfig: editor.back,
   };

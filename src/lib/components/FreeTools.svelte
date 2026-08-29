@@ -4,6 +4,7 @@
   import { editor, ensureFree, reorderLayer, duplicateLayer, regenerateCard } from '../editor/store.svelte';
   import { newSuitLayer, newTextLayer, newImageLayer, newShapeLayer, type FreeLayer } from '../editor/free';
   import { FONTS } from '../render/fonts';
+  import { assets, rememberImage, forgetImage } from '../editor/assets.svelte';
 
   let { card }: { card: Card } = $props();
 
@@ -23,7 +24,11 @@
     const file = input.files?.[0];
     if (file) {
       const r = new FileReader();
-      r.onload = () => add(newImageLayer(r.result as string));
+      r.onload = () => {
+        const href = r.result as string;
+        rememberImage(href);
+        add(newImageLayer(href));
+      };
       r.readAsDataURL(file);
     }
     input.value = '';
@@ -72,6 +77,22 @@
     <button class="opt" onclick={() => add(newShapeLayer('line'))}>╱</button>
   </div>
 </section>
+
+{#if assets.items.length}
+  <section class="ctl">
+    <h2>Images récentes</h2>
+    <div class="recent">
+      {#each assets.items as a (a.id)}
+        <div class="thumb">
+          <button class="use" title="Réutiliser cette image" onclick={() => add(newImageLayer(a.href))}>
+            <img src={a.href} alt="" />
+          </button>
+          <button class="rm" title="Oublier" aria-label="Oublier" onclick={() => forgetImage(a.id)}>✕</button>
+        </div>
+      {/each}
+    </div>
+  </section>
+{/if}
 
 {#if layers.length}
   <section class="ctl">
@@ -161,6 +182,51 @@
     width: 100%;
     height: 100%;
     display: block;
+  }
+  .recent {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+  }
+  .thumb {
+    position: relative;
+    aspect-ratio: 1;
+  }
+  .thumb .use {
+    width: 100%;
+    height: 100%;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .thumb .use img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px;
+  }
+  .thumb .rm {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    line-height: 1;
+    font-size: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--panel);
+    color: inherit;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .thumb:hover .rm {
+    opacity: 1;
   }
   .layers {
     list-style: none;

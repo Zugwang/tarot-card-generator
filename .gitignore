@@ -17,3 +17,9 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+
+# third-party / copyrighted art sets kept out of the public repo
+# (Léonora Carrington — in copyright; Oracle de Marseille — commercial product)
+public/art/atouts-carrington/
+public/art/atouts-oracle/
+*.zip

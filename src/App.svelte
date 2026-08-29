@@ -16,6 +16,8 @@
   import { theme, toggleTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
+  import { suitSymbol } from './lib/render/suits';
+  import { FONTS } from './lib/render/fonts';
   import FreeCanvas from './lib/components/FreeCanvas.svelte';
   import FreeTools from './lib/components/FreeTools.svelte';
   import { renderCardSVG, FORMATS, type FormatId } from './lib/render/card';
@@ -35,6 +37,8 @@
   const ATOUT_STYLES = [
     { id: 'marseille', label: 'Marseille' },
     { id: 'grimaud', label: 'Trad 1898' },
+    { id: 'carrington', label: 'L. Carrington' },
+    { id: 'oracle', label: 'Oracle Marseille' },
   ];
   const formatIds = Object.keys(FORMATS) as FormatId[];
 
@@ -157,6 +161,7 @@
     {/if}
     <span class="count">{deck.length} cartes</span>
 
+    <a class="reflink" href="/references.html" title="Références & crédits">Références</a>
     <button class="theme-toggle" onclick={toggleTheme} aria-label="Thème" title={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}>
       {#if theme.mode === 'dark'}<img class="sun" src="/marseille-bb.webp" alt="" />{:else}🌙{/if}
     </button>
@@ -228,6 +233,15 @@
         </section>
 
         <section class="ctl">
+          <h2>Police des numéros</h2>
+          <select class="fontsel" bind:value={editor.indexFont}>
+            {#each FONTS as f}
+              <option value={f.id} style="font-family:{f.family}">{f.label}</option>
+            {/each}
+          </select>
+        </section>
+
+        <section class="ctl">
           <h2>Positionnement</h2>
           <div class="opts">
             {#each PIP_TEMPLATES as t}
@@ -272,9 +286,17 @@
             </div>
             <label class="row">Couleur <input type="color" bind:value={editor.back.color} /></label>
             {#if editor.back.templateId === 'enseigne'}
-              <div class="opts" style="margin-top:.5rem">
+              <div class="backsuits">
                 {#each ['pique', 'coeur', 'carreau', 'trefle'] as const as s}
-                  <button class="opt" class:active={editor.back.suit === s} onclick={() => (editor.back.suit = s)}>{s}</button>
+                  <button
+                    class="backswatch"
+                    class:active={editor.back.suit === s}
+                    title={s}
+                    aria-label={s}
+                    onclick={() => (editor.back.suit = s)}
+                  >
+                    <svg viewBox="0 0 100 100" aria-hidden="true">{@html suitSymbol(s, editor.suitVariants[s], editor.back.color)}</svg>
+                  </button>
                 {/each}
               </div>
             {/if}
@@ -367,8 +389,21 @@
     opacity: 0.6;
     font-size: 0.85rem;
   }
-  .theme-toggle {
+  .reflink {
     margin-left: auto;
+    font-size: 0.82rem;
+    color: inherit;
+    opacity: 0.7;
+    text-decoration: none;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .reflink:hover {
+    opacity: 1;
+    border-color: var(--accent);
+  }
+  .theme-toggle {
     font-size: 1.1rem;
     line-height: 1;
     padding: 0.35rem 0.5rem;
@@ -546,6 +581,42 @@
     justify-content: space-between;
     font-size: 0.85rem;
     margin-top: 0.5rem;
+  }
+  .fontsel {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+  }
+  .backsuits {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+  .backswatch {
+    aspect-ratio: 1;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: inherit;
+    cursor: pointer;
+  }
+  .backswatch:hover {
+    border-color: var(--accent);
+  }
+  .backswatch.active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .backswatch svg {
+    width: 100%;
+    height: 100%;
+    display: block;
   }
   .ctl input[type='range'] {
     width: 100%;

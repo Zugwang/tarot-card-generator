@@ -2,6 +2,7 @@
   import { SUITS, type Suit } from '../model/deck';
   import { SUIT_VARIANTS, suitSymbol } from '../render/suits';
   import { editor, setSuitVariant, setCustomSuitImage } from '../editor/store.svelte';
+  import { rememberImage } from '../editor/assets.svelte';
 
   const SUIT_LABELS: Record<Suit, string> = {
     pique: 'Pique',
@@ -32,7 +33,11 @@
     const file = input.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => setCustomSuitImage(suit, reader.result as string);
+      reader.onload = () => {
+        const href = reader.result as string;
+        rememberImage(href);
+        setCustomSuitImage(suit, href);
+      };
       reader.readAsDataURL(file);
     }
     input.value = '';
