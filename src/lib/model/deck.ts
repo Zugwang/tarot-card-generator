@@ -3,6 +3,8 @@
 // exact ordered list of cards. Everything downstream (rendering, thumbnails,
 // export) consumes this.
 
+import { ORACLE_NAMES } from '../render/oracleData';
+
 export type Suit = 'pique' | 'coeur' | 'carreau' | 'trefle';
 
 /** Canonical display/render order of suits. */
@@ -18,7 +20,16 @@ export type Card =
   | { kind: 'court'; suit: Suit; rank: CourtRank }
   | { kind: 'atout'; number: number } // 1..21
   | { kind: 'excuse' }
+  | { kind: 'oracle'; number: number } // 0..77 — Oracle de Marseille (full 78-card deck)
   | { kind: 'back' }; // the shared card back, shown as the first card
+
+/** Number of cards in the Oracle de Marseille deck. */
+export const ORACLE_SIZE = 78;
+
+/** Generate the full 78-card Oracle de Marseille deck (each card is an image). */
+export function generateOracleDeck(): Card[] {
+  return Array.from({ length: ORACLE_SIZE }, (_, n) => ({ kind: 'oracle', number: n }) as Card);
+}
 
 /** The shared card back, treated as a card (first position). */
 export const BACK_CARD: Card = { kind: 'back' };
@@ -86,6 +97,8 @@ export function cardLabel(card: Card): string {
       return String(card.number);
     case 'excuse':
       return '★';
+    case 'oracle':
+      return String(card.number);
     case 'back':
       return '';
   }
@@ -129,6 +142,8 @@ export function cardName(card: Card): string {
       return `Atout ${card.number}`;
     case 'excuse':
       return 'L’Excuse';
+    case 'oracle':
+      return ORACLE_NAMES[card.number] ?? `Arcane ${card.number}`;
     case 'back':
       return 'Dos';
   }
@@ -145,6 +160,8 @@ export function cardId(card: Card): string {
       return `atout-${card.number}`;
     case 'excuse':
       return 'excuse';
+    case 'oracle':
+      return `oracle-${card.number}`;
     case 'back':
       return 'back';
   }

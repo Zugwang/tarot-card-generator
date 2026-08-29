@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { generateDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
+  import { generateDeck, generateOracleDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
   import {
     editor,
     cardRenderOptions,
@@ -32,17 +32,17 @@
     { id: 'marseille', label: 'Marseille' },
     { id: 'grimaud', label: 'Trad 1898' },
     { id: 'poker', label: 'Poker' },
+    { id: 'danois', label: 'Danois (BnF)' },
     { id: 'blanc', label: 'Blanc' },
   ];
   const ATOUT_STYLES = [
     { id: 'marseille', label: 'Marseille' },
     { id: 'grimaud', label: 'Trad 1898' },
     { id: 'carrington', label: 'L. Carrington' },
-    { id: 'oracle', label: 'Oracle Marseille' },
   ];
   const formatIds = Object.keys(FORMATS) as FormatId[];
 
-  const deck = $derived(generateDeck(editor.deckSize));
+  const deck = $derived(editor.deckKind === 'oracle' ? generateOracleDeck() : generateDeck(editor.deckSize));
   const displayCards = $derived<Card[]>([BACK_CARD, ...deck]);
   const selectedCard = $derived(displayCards.find((c) => cardId(c) === editor.selectedId) ?? null);
 
@@ -104,7 +104,7 @@
     }
   }
   function doExport(fmt: 'png' | 'svg') {
-    const cols = editor.deckSize >= 78 ? 14 : 13;
+    const cols = editor.deckKind === 'oracle' || editor.deckSize >= 78 ? 14 : 13;
     if (scope === 'jeu') {
       const entries = displayCards.map((c) => ({ name: cardId(c), svg: renderOne(c) }));
       if (asZip) {
@@ -150,8 +150,9 @@
 
     <div class="seg" role="group" aria-label="Type de jeu">
       {#each DECK_SIZES as d}
-        <button class:active={editor.deckSize === d} onclick={() => (editor.deckSize = d)}>{d}</button>
+        <button class:active={editor.deckKind === 'cartes' && editor.deckSize === d} onclick={() => { editor.deckKind = 'cartes'; editor.deckSize = d; }}>{d}</button>
       {/each}
+      <button class:active={editor.deckKind === 'oracle'} onclick={() => (editor.deckKind = 'oracle')} title="Oracle de Marseille — 78 cartes">Oracle</button>
     </div>
     {#if editor.tab === 'cartes'}
       <div class="seg" role="group" aria-label="Visualisation">
@@ -265,14 +266,6 @@
             {#each ATOUT_STYLES as s}
               <button class="opt" class:active={editor.atoutStyle === s.id} onclick={() => (editor.atoutStyle = s.id)}>{s.label}</button>
             {/each}
-          </div>
-        </section>
-
-        <section class="ctl">
-          <h2>Cadrage illustrations</h2>
-          <div class="opts">
-            <button class="opt" class:active={editor.illustrationFit === 'meet'} onclick={() => (editor.illustrationFit = 'meet')}>Entier</button>
-            <button class="opt" class:active={editor.illustrationFit === 'slice'} onclick={() => (editor.illustrationFit = 'slice')}>Rempli</button>
           </div>
         </section>
       {:else if selectedCard}

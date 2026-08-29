@@ -24,6 +24,8 @@ function nullImages(): Record<Suit, string | null> {
 export const editor = $state({
   tab: 'cartes' as Tab,
   deckSize: 52 as DeckSize,
+  /** 'cartes' = standard playing/tarot deck; 'oracle' = 78-card Oracle de Marseille. */
+  deckKind: 'cartes' as 'cartes' | 'oracle',
   viewMode: 'mosaic' as ViewMode,
   format: 'standard' as FormatChoice,
   /** Custom dimensions used when format === 'libre'. */

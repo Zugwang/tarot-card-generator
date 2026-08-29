@@ -7,7 +7,7 @@
 
 import type { Suit, CourtRank } from '../model/deck';
 
-export type AtoutStyle = 'marseille' | 'grimaud' | 'carrington' | 'oracle';
+export type AtoutStyle = 'marseille' | 'grimaud' | 'carrington';
 
 // Léonora Carrington painted only part of the Major Arcana — map the trumps we
 // have; the rest fall back to the Marseille scans so the deck stays complete.
@@ -19,29 +19,35 @@ export function atoutImage(n: number, style?: string): string {
   if (style === 'carrington') {
     return CARRINGTON.has(n) ? `/art/atouts-carrington/${nn}.jpg` : atoutImage(n, 'marseille');
   }
-  // Oracle de Marseille: numbered arcana served as webp (01..21 reachable in a
-  // 78-card tarot; the full 78-card set lives in the folder for later use).
-  if (style === 'oracle') return `/art/atouts-oracle/${nn}.webp`;
   const dir = style === 'grimaud' ? 'atouts-grimaud' : 'atouts';
   return `/art/${dir}/${nn}.jpg`;
 }
 
 export function excuseImage(style?: string): string {
   if (style === 'carrington') return '/art/atouts-carrington/fool.jpg';
-  if (style === 'oracle') return '/art/atouts-oracle/00.webp';
   return style === 'grimaud' ? '/art/atouts-grimaud/excuse.jpg' : '/art/atouts/fool.jpg';
 }
 
-export type CourtStyle = 'marseille' | 'grimaud' | 'poker' | 'blanc';
+/** Image URL for an Oracle de Marseille card (number 0..77). */
+export function oracleImage(n: number): string {
+  return `/art/atouts-oracle/${String(n).padStart(2, '0')}.webp`;
+}
+
+export type CourtStyle = 'marseille' | 'grimaud' | 'poker' | 'danois' | 'blanc';
 
 /**
  * Image URL for a court card in the given style, or null when the style draws
  * no image ('blanc' → blank card with index) or the asset is absent.
- * Poker courts have no Cavalier → falls back to null (blank) for that rank.
+ * Poker + Danish courts have no Cavalier → null (blank) for that rank.
  */
 export function courtImage(suit: Suit, rank: CourtRank, style?: string): string | null {
   if (style === 'poker') {
     return rank === 'cavalier' ? null : `/art/courts/poker/${suit}-${rank}.svg`;
+  }
+  if (style === 'danois') {
+    // Two-headed Danish-pattern engravings (BnF, Georges Marteau — public
+    // domain). Roi / Dame / Valet only; no Cavalier.
+    return rank === 'cavalier' ? null : `/art/courts/danois/${suit}-${rank}.jpg`;
   }
   if (style === 'grimaud' || style === 'marseille') {
     return `/art/courts/${style}/${suit}-${rank}.jpg`;

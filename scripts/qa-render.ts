@@ -1,33 +1,22 @@
-import { generateDeck } from '../src/lib/model/deck';
+import { generateDeck, generateOracleDeck } from '../src/lib/model/deck';
 import { renderCardSVG } from '../src/lib/render/card';
 import { pipTemplate } from '../src/lib/render/pipLayouts';
 import { writeFileSync } from 'node:fs';
 
-const deck = generateDeck(78);
-const atout = (n: number) => deck.find((c) => c.kind === 'atout' && (c as any).number === n)!;
-const base = {
-  width: 250,
-  height: 455,
-  pipTemplate: pipTemplate('classic'),
-  imageFit: 'meet' as const,
-};
+const tarot = generateDeck(78);
+const roiTrefle = tarot.find((c) => c.kind === 'court' && c.suit === 'trefle' && c.rank === 'roi')!;
+const dameCoeur = tarot.find((c) => c.kind === 'court' && c.suit === 'coeur' && c.rank === 'dame')!;
+const valetPique = tarot.find((c) => c.kind === 'court' && c.suit === 'pique' && c.rank === 'valet')!;
+const oracle = generateOracleDeck();
 
-// 1) Carrington Death (13), 2) Oracle arcane 05, 3) free-mode card with an
-// oversized image to test the rounded-corner clip.
+const base = { width: 250, height: 455, pipTemplate: pipTemplate('classic') };
 const cards: Record<string, string> = {
-  carrington13: renderCardSVG(atout(13), { ...base, atoutStyle: 'carrington' }),
-  oracle05: renderCardSVG(atout(5), { ...base, atoutStyle: 'oracle' }),
-  clipTest: renderCardSVG(atout(1), {
-    ...base,
-    atoutStyle: 'marseille',
-    freeCard: {
-      hideBase: true,
-      layers: [
-        { id: 'a', type: 'image', href: '/art/atouts-oracle/09.webp', x: 0.5, y: 0.5, size: 520, rot: 8 } as any,
-      ],
-    },
-  }),
+  danois_roi_t: renderCardSVG(roiTrefle, { ...base, courtStyle: 'danois' }),
+  danois_dame_c: renderCardSVG(dameCoeur, { ...base, courtStyle: 'danois' }),
+  danois_valet_p: renderCardSVG(valetPique, { ...base, courtStyle: 'danois' }),
+  oracle_05: renderCardSVG(oracle[5], base),
+  oracle_40: renderCardSVG(oracle[40], base),
+  oracle_77: renderCardSVG(oracle[77], base),
 };
-
 for (const [k, svg] of Object.entries(cards)) writeFileSync(`dist/qa-${k}.svg`, svg);
 console.log('wrote', Object.keys(cards).join(', '));

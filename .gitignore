@@ -23,3 +23,4 @@ npm-debug.log*
 public/art/atouts-carrington/
 public/art/atouts-oracle/
 *.zip
+*.pdf

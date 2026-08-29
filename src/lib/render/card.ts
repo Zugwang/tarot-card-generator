@@ -5,7 +5,7 @@
 import { type Card, type Suit, cardLabel, cardId } from '../model/deck';
 import { suitColor, suitSymbol } from './suits';
 import { classicTemplate, type PipTemplate } from './pipLayouts';
-import { atoutImage, excuseImage, courtImage } from './illustrations';
+import { atoutImage, excuseImage, courtImage, oracleImage } from './illustrations';
 import { backBase } from './back';
 import { fontFamily } from './fonts';
 import { type FreeCard, type FreeLayer, newLayerId } from '../editor/free';
@@ -196,6 +196,9 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
     case 'excuse':
       els.push(imageL(excuseImage(opts.atoutStyle), 0.5, 0.5, h * 0.94, 0));
       break;
+    case 'oracle':
+      els.push(imageL(oracleImage(card.number), 0.5, 0.5, h * 0.98, 0));
+      break;
     case 'back':
       break; // back keeps its motif background, not decomposed
   }
@@ -233,6 +236,9 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
         break;
       case 'excuse':
         body = renderImage(cardId(card), excuseImage(opts.atoutStyle), w, h, opts.imageFit);
+        break;
+      case 'oracle':
+        body = renderImage(cardId(card), oracleImage(card.number), w, h, opts.imageFit);
         break;
       case 'back': {
         const bc = opts.backConfig;

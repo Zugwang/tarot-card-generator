@@ -9,6 +9,7 @@ const VERSION = 1;
 const KEYS = [
   'tab',
   'deckSize',
+  'deckKind',
   'viewMode',
   'format',
   'customFormat',
