@@ -17,6 +17,9 @@ export interface CommonsPick {
   pageUrl: string;
   license: string;
   author: string;
+  /** Thumbnail pixel dimensions (for orientation detection). */
+  width: number;
+  height: number;
 }
 
 const API = 'https://commons.wikimedia.org/w/api.php';
@@ -75,6 +78,8 @@ export async function randomCommonsImage(): Promise<CommonsPick> {
         pageUrl: info.descriptionurl || '',
         license: stripTags(meta.LicenseShortName?.value || meta.License?.value || ''),
         author: stripTags(meta.Artist?.value || ''),
+        width: Number(info.thumbwidth) || 0,
+        height: Number(info.thumbheight) || 0,
       };
     }
   }

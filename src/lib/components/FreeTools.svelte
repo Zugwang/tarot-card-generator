@@ -33,8 +33,8 @@
 
   const SUIT_LABELS: Record<Suit, string> = { pique: 'Pique', coeur: 'Cœur', carreau: 'Carreau', trefle: 'Trèfle' };
   // Tarot vocabulary in Oracle mode.
-  const noun = $derived(editor.deckKind === 'oracle' ? 'lame' : 'carte');
-  const nounC = $derived(editor.deckKind === 'oracle' ? 'Lame' : 'Carte');
+  const noun = $derived(editor.deckKind === 'cartes' ? 'carte' : 'lame');
+  const nounC = $derived(editor.deckKind === 'cartes' ? 'Carte' : 'Lame');
 
   function add(layer: FreeLayer) {
     ensureFree(id).layers.push(layer);

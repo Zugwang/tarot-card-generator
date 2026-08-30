@@ -22,5 +22,7 @@ npm-debug.log*
 # (Léonora Carrington — in copyright; Oracle de Marseille — commercial product)
 public/art/atouts-carrington/
 public/art/atouts-oracle/
+# Tarot of Syssk — contemporary © artwork (RWS deck is PD and IS committed)
+public/art/tarot/syssk/
 *.zip
 *.pdf

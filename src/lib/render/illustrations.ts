@@ -33,6 +33,11 @@ export function oracleImage(n: number): string {
   return `/art/atouts-oracle/${String(n).padStart(2, '0')}.webp`;
 }
 
+/** Image URL for a full-art image deck (RWS, Syssk…) at ordered index. */
+export function imageDeckImage(set: string, index: number): string {
+  return `/art/tarot/${set}/${String(index).padStart(2, '0')}.webp`;
+}
+
 export type CourtStyle = 'marseille' | 'grimaud' | 'poker' | 'danois' | 'blanc';
 
 /**

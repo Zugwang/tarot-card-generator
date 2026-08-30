@@ -4,6 +4,7 @@
 // export) consumes this.
 
 import { ORACLE_NAMES } from '../render/oracleData';
+import { IMAGE_DECKS } from '../render/tarotData';
 
 export type Suit = 'pique' | 'coeur' | 'carreau' | 'trefle';
 
@@ -21,6 +22,7 @@ export type Card =
   | { kind: 'atout'; number: number } // 1..21
   | { kind: 'excuse' }
   | { kind: 'oracle'; number: number } // 0..77 — Oracle de Marseille (full 78-card deck)
+  | { kind: 'image'; set: string; index: number } // full-art image deck (RWS, Syssk…)
   | { kind: 'back' }; // the shared card back, shown as the first card
 
 /** Number of cards in the Oracle de Marseille deck. */
@@ -29,6 +31,12 @@ export const ORACLE_SIZE = 78;
 /** Generate the full 78-card Oracle de Marseille deck (each card is an image). */
 export function generateOracleDeck(): Card[] {
   return Array.from({ length: ORACLE_SIZE }, (_, n) => ({ kind: 'oracle', number: n }) as Card);
+}
+
+/** Generate a full-art image deck (each card is a single illustration). */
+export function generateImageDeck(set: string): Card[] {
+  const count = IMAGE_DECKS[set]?.names.length ?? 0;
+  return Array.from({ length: count }, (_, index) => ({ kind: 'image', set, index }) as Card);
 }
 
 /** The shared card back, treated as a card (first position). */
@@ -99,6 +107,8 @@ export function cardLabel(card: Card): string {
       return '★';
     case 'oracle':
       return String(card.number);
+    case 'image':
+      return String(card.index);
     case 'back':
       return '';
   }
@@ -144,6 +154,8 @@ export function cardName(card: Card): string {
       return 'L’Excuse';
     case 'oracle':
       return ORACLE_NAMES[card.number] ?? `Arcane ${card.number}`;
+    case 'image':
+      return IMAGE_DECKS[card.set]?.names[card.index] ?? `Lame ${card.index}`;
     case 'back':
       return 'Dos';
   }
@@ -162,6 +174,8 @@ export function cardId(card: Card): string {
       return 'excuse';
     case 'oracle':
       return `oracle-${card.number}`;
+    case 'image':
+      return `img-${card.set}-${card.index}`;
     case 'back':
       return 'back';
   }

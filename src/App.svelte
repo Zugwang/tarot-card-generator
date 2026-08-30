@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { generateDeck, generateOracleDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
+  import { generateDeck, generateOracleDeck, generateImageDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
+  import { IMAGE_DECKS } from './lib/render/tarotData';
   import {
     editor,
     cardRenderOptions,
@@ -27,6 +28,7 @@
   import { exportSvg, exportSheetSvg } from './lib/export/svg';
   import { exportZip } from './lib/export/zip';
   import { saveProject, loadProjectFromFile } from './lib/editor/project';
+  import { randomCommonsImage } from './lib/editor/wikimedia';
 
   const COURT_STYLES = [
     { id: 'marseille', label: 'Marseille' },
@@ -42,10 +44,19 @@
   ];
   const formatIds = Object.keys(FORMATS) as FormatId[];
 
-  const deck = $derived(editor.deckKind === 'oracle' ? generateOracleDeck() : generateDeck(editor.deckSize));
-  // Tarot vocabulary in Oracle mode: a card is a "lame".
-  const noun = $derived(editor.deckKind === 'oracle' ? 'lame' : 'carte');
-  const nounC = $derived(editor.deckKind === 'oracle' ? 'Lame' : 'Carte');
+  const imageDeckIds = Object.keys(IMAGE_DECKS);
+  const deck = $derived(
+    editor.deckKind === 'oracle'
+      ? generateOracleDeck()
+      : editor.deckKind === 'image'
+        ? generateImageDeck(editor.imageSet)
+        : generateDeck(editor.deckSize),
+  );
+  // Tarot vocabulary for image/oracle decks: a card is a "lame".
+  const isTarot = $derived(editor.deckKind === 'oracle' || editor.deckKind === 'image');
+  const noun = $derived(isTarot ? 'lame' : 'carte');
+  const nounC = $derived(isTarot ? 'Lame' : 'Carte');
+  const nounP = $derived(isTarot ? 'lames' : 'cartes');
   const displayCards = $derived<Card[]>([BACK_CARD, ...deck]);
   const selectedCard = $derived(displayCards.find((c) => cardId(c) === editor.selectedId) ?? null);
 
@@ -112,7 +123,10 @@
   }
   /** Default base name when the field is left empty. */
   function defaultBase(): string {
-    if (scope === 'jeu') return `tarotier-${editor.deckKind === 'oracle' ? 'oracle' : editor.deckSize}`;
+    if (scope === 'jeu') {
+      const tag = editor.deckKind === 'oracle' ? 'oracle' : editor.deckKind === 'image' ? editor.imageSet : editor.deckSize;
+      return `tarotier-${tag}`;
+    }
     return selectedCard ? cardId(selectedCard) : 'carte';
   }
   /** Next counter for a base name, remembered across sessions (localStorage). */
@@ -138,7 +152,7 @@
     return autoNumber ? `${base}-${String(bumpSeq(base)).padStart(2, '0')}` : base;
   }
   function doExport(fmt: 'png' | 'svg') {
-    const cols = editor.deckKind === 'oracle' || editor.deckSize >= 78 ? 14 : 13;
+    const cols = editor.deckKind !== 'cartes' || editor.deckSize >= 78 ? 14 : 13;
     const base = resolveBase();
     if (scope === 'jeu') {
       const entries = displayCards.map((c) => ({ name: cardId(c), svg: renderOne(c) }));
@@ -179,6 +193,36 @@
   // --- theme menu ---
   let themeOpen = $state(false);
 
+  // --- fill every card with a random Wikimedia Commons image ---
+  // Orientation-aware (landscape sources rotated 90°) and uniformly cover-fit.
+  let fillBusy = $state('');
+  let fillStop = false;
+  async function fillAllCommons() {
+    if (fillBusy) {
+      fillStop = true;
+      return;
+    }
+    const cards = deck;
+    if (!cards.length) return;
+    if (!confirm(`Remplir les ${cards.length} ${nounP} avec des images aléatoires (Wikimedia Commons) ? Cela remplace les fonds actuels.`)) return;
+    fillStop = false;
+    let done = 0;
+    for (const card of cards) {
+      if (fillStop) break;
+      fillBusy = `${done + 1}/${cards.length}`;
+      try {
+        const pick = await randomCommonsImage();
+        const rot = pick.width > pick.height ? 90 : 0; // détecte le sens
+        editor.freeCards[cardId(card)] = { hideBase: true, layers: [], bgImage: { href: pick.dataUrl, rot } };
+      } catch {
+        /* skip this card, keep going */
+      }
+      done++;
+    }
+    fillBusy = '';
+    fillStop = false;
+  }
+
   function onLoadFile(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -206,6 +250,9 @@
         <button class:active={editor.deckKind === 'cartes' && editor.deckSize === d} onclick={() => { editor.deckKind = 'cartes'; editor.deckSize = d; }}>{d}</button>
       {/each}
       <button class:active={editor.deckKind === 'oracle'} onclick={() => (editor.deckKind = 'oracle')} title="Oracle de Marseille — 78 lames">Oracle</button>
+      {#each imageDeckIds as id}
+        <button class:active={editor.deckKind === 'image' && editor.imageSet === id} onclick={() => { editor.deckKind = 'image'; editor.imageSet = id; }} title={IMAGE_DECKS[id].label}>{IMAGE_DECKS[id].label}</button>
+      {/each}
     </div>
     {#if editor.tab === 'cartes'}
       <div class="seg" role="group" aria-label="Visualisation">
@@ -270,6 +317,16 @@
             <label class="check"><input type="checkbox" bind:checked={asZip} /> Fichiers séparés (zip)</label>
           {/if}
         </div>
+      </section>
+
+      <section class="ctl">
+        <h2>Images aléatoires {#if fillBusy}<span class="val">{fillBusy}</span>{/if}</h2>
+        <button class="opt wide" onclick={fillAllCommons}>
+          {fillBusy ? '⏹ Arrêter' : `🎲 Remplir toutes les ${nounP} (Commons)`}
+        </button>
+        <p class="hint" style="text-align:left;margin:.5rem 0 0">
+          Une image libre par {noun}, orientée automatiquement et cadrée plein cadre. Depuis Wikimedia Commons.
+        </p>
       </section>
 
       {#if editor.tab === 'cartes'}
@@ -442,7 +499,7 @@
     <!-- Right: card picker / selection -->
     <aside class="rail right">
       {#if editor.tab === 'libre' || editor.viewMode === 'strip'}
-        <h2>{editor.deckKind === 'oracle' ? 'Lames' : 'Cartes'}</h2>
+        <h2>{isTarot ? 'Lames' : 'Cartes'}</h2>
         <div class="band">
           {#each displayCards as card (cardId(card))}
             <CardView {card} selected={editor.selectedId === cardId(card)} onselect={() => select(cardId(card))} />
@@ -671,6 +728,10 @@
   .opt:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+  .opt.wide {
+    width: 100%;
+    justify-content: center;
   }
   .opt.file input {
     display: none;

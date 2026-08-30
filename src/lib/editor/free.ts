@@ -22,6 +22,8 @@ export type FreeLayer =
 export interface FreeCard {
   hideBase: boolean;
   layers: FreeLayer[];
+  /** Optional full-card cover image (used by "fill all with random images"). */
+  bgImage?: { href: string; rot: number };
 }
 
 export function emptyFreeCard(): FreeCard {

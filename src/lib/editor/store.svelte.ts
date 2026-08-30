@@ -24,8 +24,10 @@ function nullImages(): Record<Suit, string | null> {
 export const editor = $state({
   tab: 'cartes' as Tab,
   deckSize: 52 as DeckSize,
-  /** 'cartes' = standard playing/tarot deck; 'oracle' = 78-card Oracle de Marseille. */
-  deckKind: 'cartes' as 'cartes' | 'oracle',
+  /** 'cartes' = standard deck; 'oracle' = Oracle de Marseille; 'image' = a full-art image deck. */
+  deckKind: 'cartes' as 'cartes' | 'oracle' | 'image',
+  /** Which full-art image deck is active when deckKind === 'image' (see IMAGE_DECKS). */
+  imageSet: 'rws' as string,
   viewMode: 'mosaic' as ViewMode,
   format: 'standard' as FormatChoice,
   /** Custom dimensions used when format === 'libre'. */

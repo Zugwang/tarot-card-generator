@@ -10,6 +10,7 @@ const KEYS = [
   'tab',
   'deckSize',
   'deckKind',
+  'imageSet',
   'viewMode',
   'format',
   'customFormat',

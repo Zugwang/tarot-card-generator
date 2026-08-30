@@ -5,7 +5,7 @@
 import { type Card, type Suit, cardLabel, cardId } from '../model/deck';
 import { suitColor, suitSymbol } from './suits';
 import { classicTemplate, type PipTemplate } from './pipLayouts';
-import { atoutImage, excuseImage, courtImage, oracleImage } from './illustrations';
+import { atoutImage, excuseImage, courtImage, oracleImage, imageDeckImage } from './illustrations';
 import { backBase } from './back';
 import { fontFamily } from './fonts';
 import { type FreeCard, type FreeLayer, newLayerId } from '../editor/free';
@@ -144,6 +144,21 @@ function backEnseigne(bc: NonNullable<RenderOptions['backConfig']>, w: number, h
   );
 }
 
+/** Full-card cover image (crops to fill), optionally rotated 90° for landscape
+ *  sources so a portrait card is filled with minimal cropping. The outer rounded
+ *  card clip (in renderCardSVG) trims the overflow. */
+function renderCoverImage(href: string, w: number, h: number, rot = 0): string {
+  const img = (x: number, y: number, iw: number, ih: number) =>
+    `<image href="${href}" xlink:href="${href}" x="${round(x)}" y="${round(y)}" width="${round(iw)}" height="${round(ih)}" preserveAspectRatio="xMidYMid slice"/>`;
+  if (rot % 180 !== 0) {
+    // Draw into a swapped (h×w) box centered on the card, then rotate 90°.
+    const bw = h;
+    const bh = w;
+    return `<g transform="rotate(${rot} ${round(w / 2)} ${round(h / 2)})">${img((w - bw) / 2, (h - bh) / 2, bw, bh)}</g>`;
+  }
+  return img(0, 0, w, h);
+}
+
 function renderImage(uid: string, href: string, w: number, h: number, fit: 'meet' | 'slice' = 'meet'): string {
   const m = 7;
   const iw = w - 2 * m;
@@ -211,6 +226,9 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
     case 'oracle':
       els.push(imageL(oracleImage(card.number), 0.5, 0.5, h * 0.98, 0));
       break;
+    case 'image':
+      els.push(imageL(imageDeckImage(card.set, card.index), 0.5, 0.5, h * 0.98, 0));
+      break;
     case 'back':
       break; // back keeps its motif background, not decomposed
   }
@@ -252,6 +270,9 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
       case 'oracle':
         body = renderImage(cardId(card), oracleImage(card.number), w, h, opts.imageFit);
         break;
+      case 'image':
+        body = renderImage(cardId(card), imageDeckImage(card.set, card.index), w, h, opts.imageFit);
+        break;
       case 'back': {
         const bc = opts.backConfig;
         body =
@@ -262,6 +283,7 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
       }
     }
 
+  const bg = free?.bgImage ? renderCoverImage(free.bgImage.href, w, h, free.bgImage.rot) : '';
   const overlay = free?.layers.length ? free.layers.map((l) => renderLayer(l, w, h)).join('') : '';
 
   // Clip all content to the rounded card shape so overlay images / free layers
@@ -273,6 +295,7 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
     `<defs><clipPath id="${clipId}"><rect x="3" y="3" width="${w - 6}" height="${h - 6}" rx="15"/></clipPath></defs>` +
     `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="16" fill="${opts.cardBg ?? '#ffffff'}" stroke="#d9d4c8" stroke-width="2"/>` +
     `<g clip-path="url(#${clipId})">` +
+    bg +
     body +
     corners +
     overlay +
