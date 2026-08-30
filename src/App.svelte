@@ -46,7 +46,6 @@
   // Tarot vocabulary in Oracle mode: a card is a "lame".
   const noun = $derived(editor.deckKind === 'oracle' ? 'lame' : 'carte');
   const nounC = $derived(editor.deckKind === 'oracle' ? 'Lame' : 'Carte');
-  const nounP = $derived(editor.deckKind === 'oracle' ? 'lames' : 'cartes');
   const displayCards = $derived<Card[]>([BACK_CARD, ...deck]);
   const selectedCard = $derived(displayCards.find((c) => cardId(c) === editor.selectedId) ?? null);
 
