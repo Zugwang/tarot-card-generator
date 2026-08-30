@@ -14,6 +14,9 @@
   const selected = $derived(layers.find((l) => l.id === editor.freeLayerId) ?? null);
 
   const SUIT_LABELS: Record<Suit, string> = { pique: 'Pique', coeur: 'Cœur', carreau: 'Carreau', trefle: 'Trèfle' };
+  // Tarot vocabulary in Oracle mode.
+  const noun = $derived(editor.deckKind === 'oracle' ? 'lame' : 'carte');
+  const nounC = $derived(editor.deckKind === 'oracle' ? 'Lame' : 'Carte');
 
   function add(layer: FreeLayer) {
     ensureFree(id).layers.push(layer);
@@ -47,7 +50,7 @@
 </script>
 
 <section class="ctl">
-  <h2>Carte éditée</h2>
+  <h2>{nounC} éditée</h2>
   <p class="which">{cardName(card)}</p>
   {#if free}
     <label class="check">
@@ -57,8 +60,8 @@
   {/if}
   <button
     class="opt regen"
-    title="Reconstruit la carte depuis le modèle (annule les modifications libres)"
-    onclick={() => confirm('Regénérer cette carte depuis le modèle ? Les modifications libres seront perdues.') && regenerateCard(card)}
+    title="Reconstruit la {noun} depuis le modèle (annule les modifications libres)"
+    onclick={() => confirm(`Regénérer cette ${noun} depuis le modèle ? Les modifications libres seront perdues.`) && regenerateCard(card)}
   >↻ Regénérer depuis le modèle</button>
 </section>
 

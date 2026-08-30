@@ -5,11 +5,12 @@
 @font-face { font-family: 'Major Mono Display'; src: url('/fonts/majormono.woff2') format('woff2'); font-display: swap; }
 
 :root {
+  /* Base = Jour (light parchment). Concrete themes override via [data-theme]. */
   --text: #2b2733;
   --text-h: #08060d;
-  --bg: #faf9f7;
-  --panel: #ffffff;
-  --border: #e4e0d8;
+  --bg: #faf6ee;
+  --panel: #fffdf8;
+  --border: #e6dfce;
   --accent: #8a1f2b;
 
   font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
@@ -20,10 +21,9 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Dark tokens — shared by the system preference (unless forced light) and the
-   explicit toggle. */
+/* Avoid a white flash before JS sets the theme, for dark-system visitors. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme]) {
     --text: #cbc9d1;
     --text-h: #f3f4f6;
     --bg: #17161c;
@@ -33,7 +33,53 @@
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
+
+/* ── Aurore — warm sepia dawn, terracotta ink ─────────────────────────── */
+:root[data-theme="aurore"] {
+  --text: #4a3b3f;
+  --text-h: #2a1d22;
+  --bg: #f7ede3;
+  --panel: #fff7f0;
+  --border: #ecd6c4;
+  --accent: #b5532e;
+  color-scheme: light;
+}
+
+/* ── Jour — parchment day, burgundy ink ───────────────────────────────── */
+:root[data-theme="jour"] {
+  --text: #2b2733;
+  --text-h: #08060d;
+  --bg: #faf6ee;
+  --panel: #fffdf8;
+  --border: #e6dfce;
+  --accent: #8a1f2b;
+  color-scheme: light;
+}
+
+/* ── Clair-obscur — Expédition 33: deep petrol, antique gold ──────────── */
+:root[data-theme="clair-obscur"] {
+  --text: #d7ccb6;
+  --text-h: #f4ead1;
+  --bg: #12232a;
+  --panel: #1b323b;
+  --border: #2c4a53;
+  --accent: #d6a441;
+  color-scheme: dark;
+}
+
+/* ── Crépuscule — Hades II: moonlit indigo/violet, witch-gold ─────────── */
+:root[data-theme="hades"] {
+  --text: #cfc6e6;
+  --text-h: #f2ecff;
+  --bg: #16122a;
+  --panel: #20193c;
+  --border: #362a5c;
+  --accent: #cba24b;
+  color-scheme: dark;
+}
+
+/* ── Nuit — deep neutral night ────────────────────────────────────────── */
+:root[data-theme="nuit"] {
   --text: #cbc9d1;
   --text-h: #f3f4f6;
   --bg: #17161c;
@@ -41,9 +87,6 @@
   --border: #33313d;
   --accent: #e0808c;
   color-scheme: dark;
-}
-:root[data-theme="light"] {
-  color-scheme: light;
 }
 
 * {

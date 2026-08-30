@@ -1,0 +1,4 @@
+# Tarotier — outil personnel, non destiné à être indexé ou diffusé.
+# Aucun robot ne doit explorer ni indexer ce site.
+User-agent: *
+Disallow: /

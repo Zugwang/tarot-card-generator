@@ -73,3 +73,11 @@ Statut au 2026-08-22.
 - [ ] **Impression pro** : PDF (dépend de pdf-lib), dimensions physiques mm,
       bleed/safe/crop marks, recto-verso, CMYK. Chantier à part entière ;
       l'utilisateur a priorisé écran/PNG. À cadrer séparément.
+- [ ] **Type de jeu « Libre » (nombre de lames paramétrable)** — renommer le
+      bouton « Oracle » en « Libre » ouvrant un champ numérique :
+      - défaut **78** → jeu **Oracle de Marseille** (comportement actuel) ;
+      - tout autre nombre → **mode libre auto-généré** de N lames (numérotées,
+        fond/enseigne par défaut) que l'utilisateur habille ensuite.
+      À concevoir : modèle d'une « lame libre » (kind), génération, nommage,
+      cohérence avec l'export/planche et le mode libre. (demandé 2026-08-30,
+      « on réfléchira à cela plus tard »)

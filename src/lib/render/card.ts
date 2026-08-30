@@ -42,10 +42,8 @@ export interface RenderOptions {
   atoutStyle?: string;
   /** Font id (see fonts.ts) for the generated corner indices. */
   indexFont?: string;
-  /** Number of corners bearing the index (number + suit): 2 (default) or 4. */
-  cornerCount?: 2 | 4;
-  /** Also draw the corner index over illustrated court cards (figures). */
-  courtCorners?: boolean;
+  /** Number of corners bearing the index (number + suit): 0, 2 (default) or 4. */
+  cornerCount?: 0 | 2 | 4;
   /** Back motif (used by the 'back' card). */
   backConfig?: { templateId: string; color: string; suit?: Suit; variant?: string };
   /** Free-mode override for this card (layers on top of / instead of the base). */
@@ -110,6 +108,7 @@ function cornerIndex(card: Card & { suit: Suit }, opts: RenderOptions, w: number
   const label = cardLabel(card);
   const color = colorFor(card.suit, opts);
   const mini = symbolFor(card.suit, opts, color);
+  if (opts.cornerCount === 0) return '';
   const ff = fontFamily(opts.indexFont);
   const block = (x: number, y: number, rot: number) =>
     `<g transform="translate(${round(x)} ${round(y)}) rotate(${rot})">` +
@@ -177,6 +176,7 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
       : suitL(suit, opts.suitVariants?.[suit], colorFor(suit, opts), cx / w, cy / h, size, rot);
   };
   const corners = (suit: Suit, label: string) => {
+    if (opts.cornerCount === 0) return;
     const color = colorFor(suit, opts);
     const font = opts.indexFont;
     els.push(textL(label, color, 0.104, 0.088, 26, 0, font), sym(suit, 0.104 * w, 0.14 * h, 22, 0));
@@ -198,10 +198,8 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
       break;
     case 'court': {
       const img = courtImage(card.suit, card.rank, opts.courtStyle);
-      if (img) {
-        els.push(imageL(img, 0.5, 0.5, h * 0.94, 0));
-        if (opts.courtCorners) corners(card.suit, cardLabel(card));
-      } else corners(card.suit, cardLabel(card));
+      if (img) els.push(imageL(img, 0.5, 0.5, h * 0.94, 0));
+      else corners(card.suit, cardLabel(card));
       break;
     }
     case 'atout':
@@ -241,10 +239,8 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
         break;
       case 'court': {
         const img = courtImage(card.suit, card.rank, opts.courtStyle);
-        if (img) {
-          body = renderImage(cardId(card), img, w, h, opts.imageFit);
-          if (opts.courtCorners) corners = cornerIndex(card, opts, w, h);
-        } else corners = cornerIndex(card, opts, w, h); // 'blanc' = index only
+        if (img) body = renderImage(cardId(card), img, w, h, opts.imageFit);
+        else corners = cornerIndex(card, opts, w, h); // 'blanc' = index only
         break;
       }
       case 'atout':

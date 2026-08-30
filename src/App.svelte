@@ -13,7 +13,7 @@
     trulyRandomPalette,
     standardPalette,
   } from './lib/editor/store.svelte';
-  import { theme, toggleTheme } from './lib/editor/theme.svelte';
+  import { theme, setTheme, THEMES, currentTheme } from './lib/editor/theme.svelte';
   import CardView from './lib/components/CardView.svelte';
   import SuitVariantPicker from './lib/components/SuitVariantPicker.svelte';
   import { suitSymbol } from './lib/render/suits';
@@ -43,6 +43,10 @@
   const formatIds = Object.keys(FORMATS) as FormatId[];
 
   const deck = $derived(editor.deckKind === 'oracle' ? generateOracleDeck() : generateDeck(editor.deckSize));
+  // Tarot vocabulary in Oracle mode: a card is a "lame".
+  const noun = $derived(editor.deckKind === 'oracle' ? 'lame' : 'carte');
+  const nounC = $derived(editor.deckKind === 'oracle' ? 'Lame' : 'Carte');
+  const nounP = $derived(editor.deckKind === 'oracle' ? 'lames' : 'cartes');
   const displayCards = $derived<Card[]>([BACK_CARD, ...deck]);
   const selectedCard = $derived(displayCards.find((c) => cardId(c) === editor.selectedId) ?? null);
 
@@ -126,20 +130,26 @@
     }
   }
 
-  // --- resizable right rail (widen the single-card preview in mosaic) ---
+  // --- resizable rails (widen the controls, or the single-card preview) ---
   let rightW = $state(210);
-  function startResize(e: PointerEvent) {
-    e.preventDefault();
-    const move = (ev: PointerEvent) => {
-      rightW = Math.min(640, Math.max(170, window.innerWidth - ev.clientX));
+  let leftW = $state(250);
+  function drag(set: (px: number) => void) {
+    return (e: PointerEvent) => {
+      e.preventDefault();
+      const move = (ev: PointerEvent) => set(ev.clientX);
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
     };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
   }
+  const startResizeRight = drag((x) => (rightW = Math.min(640, Math.max(170, window.innerWidth - x))));
+  const startResizeLeft = drag((x) => (leftW = Math.min(460, Math.max(200, x))));
+
+  // --- theme menu ---
+  let themeOpen = $state(false);
 
   function onLoadFile(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -167,7 +177,7 @@
       {#each DECK_SIZES as d}
         <button class:active={editor.deckKind === 'cartes' && editor.deckSize === d} onclick={() => { editor.deckKind = 'cartes'; editor.deckSize = d; }}>{d}</button>
       {/each}
-      <button class:active={editor.deckKind === 'oracle'} onclick={() => (editor.deckKind = 'oracle')} title="Oracle de Marseille — 78 cartes">Oracle</button>
+      <button class:active={editor.deckKind === 'oracle'} onclick={() => (editor.deckKind = 'oracle')} title="Oracle de Marseille — 78 lames">Oracle</button>
     </div>
     {#if editor.tab === 'cartes'}
       <div class="seg" role="group" aria-label="Visualisation">
@@ -175,15 +185,34 @@
         <button class:active={editor.viewMode === 'strip'} onclick={() => (editor.viewMode = 'strip')}>Bandeau</button>
       </div>
     {/if}
-    <span class="count">{deck.length} cartes</span>
 
     <a class="reflink" href="/references.html" title="Références & crédits">Références</a>
-    <button class="theme-toggle" onclick={toggleTheme} aria-label="Thème" title={theme.mode === 'dark' ? 'Mode clair' : 'Mode nuit'}>
-      {#if theme.mode === 'dark'}<img class="sun" src="/marseille-bb.webp" alt="" />{:else}🌙{/if}
-    </button>
+    <div class="thememenu">
+      <button
+        class="theme-toggle"
+        onclick={() => (themeOpen = !themeOpen)}
+        aria-haspopup="menu"
+        aria-expanded={themeOpen}
+        aria-label="Thème"
+        title="Thème : {currentTheme().label}"
+      >{@html currentTheme().icon}</button>
+      {#if themeOpen}
+        <button class="themebackdrop" aria-label="Fermer" onclick={() => (themeOpen = false)}></button>
+        <div class="themepop" role="menu">
+          {#each THEMES as t}
+            <button
+              role="menuitemradio"
+              aria-checked={theme.id === t.id}
+              class:active={theme.id === t.id}
+              onclick={() => { setTheme(t.id); themeOpen = false; }}
+            ><span class="ti">{@html t.icon}</span>{t.label}</button>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </header>
 
-  <div class="body" style="--right-w:{rightW}px">
+  <div class="body" style="--left-w:{leftW}px; --right-w:{rightW}px">
     <!-- Left: controls -->
     <aside class="rail left">
       <section class="ctl">
@@ -194,7 +223,7 @@
         </div>
         <div class="scope">
           <div class="seg small" role="group" aria-label="Portée export">
-            <button class:active={scope === 'carte'} onclick={() => (scope = 'carte')}>Carte</button>
+            <button class:active={scope === 'carte'} onclick={() => (scope = 'carte')}>{nounC}</button>
             <button class:active={scope === 'jeu'} onclick={() => (scope = 'jeu')}>Jeu</button>
           </div>
           <div class="opts">
@@ -251,6 +280,7 @@
         <section class="ctl">
           <h2>Enseignes aux coins</h2>
           <div class="seg small" role="group" aria-label="Nombre de coins">
+            <button class:active={editor.cornerCount === 0} onclick={() => (editor.cornerCount = 0)}>0 coin</button>
             <button class:active={editor.cornerCount === 2} onclick={() => (editor.cornerCount = 2)}>2 coins</button>
             <button class:active={editor.cornerCount === 4} onclick={() => (editor.cornerCount = 4)}>4 coins</button>
           </div>
@@ -281,10 +311,6 @@
               <button class="opt" class:active={editor.courtStyle === s.id} onclick={() => (editor.courtStyle = s.id)}>{s.label}</button>
             {/each}
           </div>
-          <label class="check" style="margin-top:.6rem">
-            <input type="checkbox" bind:checked={editor.courtCorners} />
-            Nº + enseigne aux coins
-          </label>
         </section>
 
         <section class="ctl">
@@ -324,9 +350,19 @@
         {/if}
         <FreeTools card={selectedCard} />
       {:else}
-        <p class="hint">Choisis une carte à éditer dans la liste →</p>
+        <p class="hint">Choisis une {noun} à éditer dans la liste →</p>
       {/if}
     </aside>
+
+    <!-- Drag handle to widen the left controls rail -->
+    <div
+      class="resizer"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Redimensionner les réglages"
+      title="Glisser pour élargir les réglages"
+      onpointerdown={startResizeLeft}
+    ></div>
 
     <!-- Center: stage -->
     <main class="stage">
@@ -336,7 +372,7 @@
             <FreeCanvas card={selectedCard} />
             <p class="hint">Glisse, redimensionne (coin) et pivote (poignée) les calques.</p>
           {:else}
-            <div class="hint">Choisis une carte à éditer →</div>
+            <div class="hint">Choisis une {noun} à éditer →</div>
           {/if}
         </div>
       {:else if editor.viewMode === 'mosaic'}
@@ -349,7 +385,7 @@
         <div class="preview">
           <div class="nav">
             <button class="arrow" onclick={() => step(-1)} aria-label="Précédente">‹</button>
-            {#if selectedCard}<div class="big"><CardView card={selectedCard} /></div>{:else}<div class="hint">Choisis une carte →</div>{/if}
+            {#if selectedCard}<div class="big"><CardView card={selectedCard} /></div>{:else}<div class="hint">Choisis une {noun} →</div>{/if}
             <button class="arrow" onclick={() => step(1)} aria-label="Suivante">›</button>
           </div>
           {#if selectedCard}<p class="cardname">{cardName(selectedCard)}</p>{/if}
@@ -364,13 +400,13 @@
       aria-orientation="vertical"
       aria-label="Redimensionner le panneau"
       title="Glisser pour élargir la sélection"
-      onpointerdown={startResize}
+      onpointerdown={startResizeRight}
     ></div>
 
     <!-- Right: card picker / selection -->
     <aside class="rail right">
       {#if editor.tab === 'libre' || editor.viewMode === 'strip'}
-        <h2>Cartes</h2>
+        <h2>{editor.deckKind === 'oracle' ? 'Lames' : 'Cartes'}</h2>
         <div class="band">
           {#each displayCards as card (cardId(card))}
             <CardView {card} selected={editor.selectedId === cardId(card)} onselect={() => select(cardId(card))} />
@@ -382,7 +418,7 @@
           <p class="cardname">{cardName(selectedCard)}</p>
           <div class="big"><CardView card={selectedCard} /></div>
         {:else}
-          <p class="hint">Clique une carte.</p>
+          <p class="hint">Clique une {noun}.</p>
         {/if}
       {/if}
     </aside>
@@ -415,10 +451,6 @@
     width: 30px;
     object-fit: contain;
   }
-  .count {
-    opacity: 0.6;
-    font-size: 0.85rem;
-  }
   .reflink {
     margin-left: auto;
     font-size: 0.82rem;
@@ -433,24 +465,72 @@
     opacity: 1;
     border-color: var(--accent);
   }
+  .thememenu {
+    position: relative;
+  }
   .theme-toggle {
-    font-size: 1.1rem;
     line-height: 1;
-    padding: 0.35rem 0.5rem;
+    padding: 0.3rem 0.45rem;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--panel);
     color: inherit;
     cursor: pointer;
+    display: flex;
   }
-  .theme-toggle .sun {
-    height: 20px;
-    width: 20px;
-    object-fit: contain;
+  .theme-toggle :global(svg) {
     display: block;
   }
   .theme-toggle:hover {
     border-color: var(--accent);
+    color: var(--accent);
+  }
+  .themebackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    border: none;
+    background: transparent;
+    cursor: default;
+  }
+  .themepop {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    min-width: 168px;
+    padding: 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  }
+  .themepop button {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.55rem;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .themepop button:hover {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+  .themepop button.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .themepop .ti {
+    display: flex;
+    opacity: 0.9;
   }
 
   .seg {
@@ -483,7 +563,7 @@
 
   .body {
     display: grid;
-    grid-template-columns: 250px 1fr 6px var(--right-w, 210px);
+    grid-template-columns: var(--left-w, 250px) 6px 1fr 6px var(--right-w, 210px);
     min-height: 0;
   }
   .resizer {
