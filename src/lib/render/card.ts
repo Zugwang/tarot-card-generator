@@ -44,6 +44,8 @@ export interface RenderOptions {
   indexFont?: string;
   /** Number of corners bearing the index (number + suit): 0, 2 (default) or 4. */
   cornerCount?: 0 | 2 | 4;
+  /** Draw a light halo behind the suits/indices so they stay legible over images. */
+  contrastPips?: boolean;
   /** Back motif (used by the 'back' card). */
   backConfig?: { templateId: string; color: string; suit?: Suit; variant?: string };
   /** Free-mode override for this card (layers on top of / instead of the base). */
@@ -289,15 +291,27 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
   // Clip all content to the rounded card shape so overlay images / free layers
   // can't spill past the border (unified rounded corners on every card).
   const clipId = `cardclip-${cardId(card)}`;
+
+  // Optional contrast halo: a white "sticker" outline behind the suits/indices
+  // so they stay legible over a busy background (e.g. Commons images).
+  const haloId = `halo-${cardId(card)}`;
+  const haloDef = opts.contrastPips
+    ? `<filter id="${haloId}" x="-20%" y="-20%" width="140%" height="140%">` +
+      `<feMorphology in="SourceAlpha" operator="dilate" radius="1.8" result="o"/>` +
+      `<feFlood flood-color="#ffffff" flood-opacity="0.95"/>` +
+      `<feComposite in2="o" operator="in" result="ol"/>` +
+      `<feMerge><feMergeNode in="ol"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
+    : '';
+  const pipContent = opts.contrastPips ? `<g filter="url(#${haloId})">${body}${corners}</g>` : body + corners;
+
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
     `viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img">` +
-    `<defs><clipPath id="${clipId}"><rect x="3" y="3" width="${w - 6}" height="${h - 6}" rx="15"/></clipPath></defs>` +
+    `<defs><clipPath id="${clipId}"><rect x="3" y="3" width="${w - 6}" height="${h - 6}" rx="15"/></clipPath>${haloDef}</defs>` +
     `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="16" fill="${opts.cardBg ?? '#ffffff'}" stroke="#d9d4c8" stroke-width="2"/>` +
     `<g clip-path="url(#${clipId})">` +
     bg +
-    body +
-    corners +
+    pipContent +
     overlay +
     `</g>` +
     `</svg>`

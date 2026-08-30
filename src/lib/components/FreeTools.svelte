@@ -54,6 +54,29 @@
     }
     input.value = '';
   }
+  function setBgImage(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      const r = new FileReader();
+      r.onload = () => {
+        const href = r.result as string;
+        const im = new Image();
+        im.onload = () => {
+          const rot = im.naturalWidth > im.naturalHeight ? 90 : 0; // orient landscape → portrait
+          ensureFree(id).bgImage = { href, rot };
+        };
+        im.src = href;
+        rememberImage(href);
+      };
+      r.readAsDataURL(file);
+    }
+    input.value = '';
+  }
+  function clearBgImage() {
+    const f = editor.freeCards[id];
+    if (f) f.bgImage = undefined;
+  }
   function del(layerId: string) {
     const f = editor.freeCards[id];
     if (f) f.layers = f.layers.filter((l) => l.id !== layerId);
@@ -81,6 +104,15 @@
     title="Reconstruit la {noun} depuis le modèle (annule les modifications libres)"
     onclick={() => confirm(`Regénérer cette ${noun} depuis le modèle ? Les modifications libres seront perdues.`) && regenerateCard(card)}
   >↻ Regénérer depuis le modèle</button>
+</section>
+
+<section class="ctl">
+  <h2>Fond de la {noun}</h2>
+  <label class="row">Couleur <input type="color" bind:value={editor.cardBg} /></label>
+  <div class="opts" style="margin-top:.5rem">
+    <label class="opt file">🖼 Image de fond<input type="file" accept="image/*" onchange={setBgImage} /></label>
+    {#if free?.bgImage}<button class="opt" onclick={clearBgImage}>Retirer le fond</button>{/if}
+  </div>
 </section>
 
 <section class="ctl">

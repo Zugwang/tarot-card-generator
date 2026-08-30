@@ -216,7 +216,8 @@
       try {
         const pick = await randomCommonsImage();
         const rot = pick.width > pick.height ? 90 : 0; // détecte le sens
-        editor.freeCards[cardId(card)] = { hideBase: true, layers: [], bgImage: { href: pick.dataUrl, rot } };
+        // hideBase:false → the image is a BACKGROUND; suits/indices stay drawn on top.
+        editor.freeCards[cardId(card)] = { hideBase: false, layers: [], bgImage: { href: pick.dataUrl, rot } };
       } catch {
         /* skip this card, keep going */
       }
@@ -363,6 +364,10 @@
             <button class:active={editor.cornerCount === 2} onclick={() => (editor.cornerCount = 2)}>2 coins</button>
             <button class:active={editor.cornerCount === 4} onclick={() => (editor.cornerCount = 4)}>4 coins</button>
           </div>
+          <label class="check" style="margin-top:.6rem">
+            <input type="checkbox" bind:checked={editor.contrastPips} />
+            Contraste (halo sous enseignes/numéros)
+          </label>
         </section>
 
         <section class="ctl">

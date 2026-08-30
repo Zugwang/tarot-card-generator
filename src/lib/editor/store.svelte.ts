@@ -53,6 +53,8 @@ export const editor = $state({
   indexFont: 'georgia' as string,
   /** Index corners (number + suit): 0 (none), 2 (classic) or 4. */
   cornerCount: 2 as 0 | 2 | 4,
+  /** Halo behind suits/indices for legibility over images. */
+  contrastPips: false,
   selectedId: null as string | null,
   back: { templateId: 'quadrille', color: '#8a1f2b', suit: 'pique' as Suit },
   /** Free-mode overrides, keyed by card id. */
@@ -182,6 +184,7 @@ export function cardRenderOptions(): RenderOptions {
     atoutStyle: editor.atoutStyle,
     indexFont: editor.indexFont,
     cornerCount: editor.cornerCount,
+    contrastPips: editor.contrastPips,
     imageFit: editor.illustrationFit,
     backConfig: editor.back,
   };
