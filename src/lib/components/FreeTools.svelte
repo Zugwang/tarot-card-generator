@@ -5,8 +5,26 @@
   import { newSuitLayer, newTextLayer, newImageLayer, newShapeLayer, type FreeLayer } from '../editor/free';
   import { FONTS } from '../render/fonts';
   import { assets, rememberImage, forgetImage } from '../editor/assets.svelte';
+  import { randomCommonsImage, type CommonsPick } from '../editor/wikimedia';
 
   let { card }: { card: Card } = $props();
+
+  let randomBusy = $state(false);
+  let lastPick = $state<CommonsPick | null>(null);
+  async function addRandom() {
+    if (randomBusy) return;
+    randomBusy = true;
+    try {
+      const pick = await randomCommonsImage();
+      rememberImage(pick.dataUrl);
+      add(newImageLayer(pick.dataUrl));
+      lastPick = pick;
+    } catch (e) {
+      alert('Image aléatoire : ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      randomBusy = false;
+    }
+  }
 
   const id = $derived(cardId(card));
   const free = $derived(editor.freeCards[id]);
@@ -78,7 +96,18 @@
     <button class="opt" onclick={() => add(newShapeLayer('rect'))}>▭</button>
     <button class="opt" onclick={() => add(newShapeLayer('ellipse'))}>◯</button>
     <button class="opt" onclick={() => add(newShapeLayer('line'))}>╱</button>
+    <button class="opt" onclick={addRandom} disabled={randomBusy} title="Image libre au hasard (Wikimedia Commons)">
+      {randomBusy ? '🎲 …' : '🎲 Commons'}
+    </button>
   </div>
+  {#if lastPick}
+    <p class="credit">
+      <span title={lastPick.title}>{lastPick.title}</span>
+      {#if lastPick.author}<br />par {lastPick.author}{/if}
+      {#if lastPick.license} · {lastPick.license}{/if}
+      {#if lastPick.pageUrl}<a href={lastPick.pageUrl} target="_blank" rel="noreferrer noopener">source ↗</a>{/if}
+    </p>
+  {/if}
 </section>
 
 {#if assets.items.length}
@@ -154,6 +183,25 @@
   .which {
     font-weight: 600;
     margin: 0 0 0.6rem;
+  }
+  .credit {
+    margin: 0.5rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    opacity: 0.7;
+    overflow-wrap: anywhere;
+  }
+  .credit span {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+  .credit a {
+    color: var(--accent);
+    white-space: nowrap;
   }
   .check,
   .row {
