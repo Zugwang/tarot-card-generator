@@ -56,14 +56,14 @@
   color-scheme: light;
 }
 
-/* ── Clair-obscur — Expédition 33: deep petrol, antique gold ──────────── */
+/* ── Clair-obscur — Expédition 33: deep petrol, warm golden yellow ────── */
 :root[data-theme="clair-obscur"] {
-  --text: #d7ccb6;
-  --text-h: #f4ead1;
+  --text: #dbcfb4;
+  --text-h: #f6eccf;
   --bg: #12232a;
   --panel: #1b323b;
   --border: #2c4a53;
-  --accent: #d6a441;
+  --accent: #f0b52e;
   color-scheme: dark;
 }
 
@@ -78,14 +78,14 @@
   color-scheme: dark;
 }
 
-/* ── Nuit — deep neutral night ────────────────────────────────────────── */
+/* ── Nuit — black & dark violet ───────────────────────────────────────── */
 :root[data-theme="nuit"] {
-  --text: #cbc9d1;
-  --text-h: #f3f4f6;
-  --bg: #17161c;
-  --panel: #201f27;
-  --border: #33313d;
-  --accent: #e0808c;
+  --text: #cfc7dd;
+  --text-h: #f3effa;
+  --bg: #0b0a0f;
+  --panel: #171226;
+  --border: #2b2140;
+  --accent: #8b6cf0;
   color-scheme: dark;
 }
 

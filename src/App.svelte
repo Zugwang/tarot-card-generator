@@ -190,8 +190,11 @@
   const startResizeRight = drag((x) => (rightW = Math.min(640, Math.max(170, window.innerWidth - x))));
   const startResizeLeft = drag((x) => (leftW = Math.min(460, Math.max(200, x))));
 
-  // --- theme menu ---
-  let themeOpen = $state(false);
+  // --- theme cycling (single button steps through the 5 themes) ---
+  function cycleTheme() {
+    const i = THEMES.findIndex((t) => t.id === theme.id);
+    setTheme(THEMES[(i + 1) % THEMES.length].id);
+  }
 
   // --- fill every card with a random Wikimedia Commons image ---
   // Orientation-aware (landscape sources rotated 90°) and uniformly cover-fit.
@@ -262,29 +265,12 @@
     {/if}
 
     <a class="reflink" href="/references.html" title="Références & crédits">Références</a>
-    <div class="thememenu">
-      <button
-        class="theme-toggle"
-        onclick={() => (themeOpen = !themeOpen)}
-        aria-haspopup="menu"
-        aria-expanded={themeOpen}
-        aria-label="Thème"
-        title="Thème : {currentTheme().label}"
-      >{@html currentTheme().icon}</button>
-      {#if themeOpen}
-        <button class="themebackdrop" aria-label="Fermer" onclick={() => (themeOpen = false)}></button>
-        <div class="themepop" role="menu">
-          {#each THEMES as t}
-            <button
-              role="menuitemradio"
-              aria-checked={theme.id === t.id}
-              class:active={theme.id === t.id}
-              onclick={() => { setTheme(t.id); themeOpen = false; }}
-            ><span class="ti">{@html t.icon}</span>{t.label}</button>
-          {/each}
-        </div>
-      {/if}
-    </div>
+    <button
+      class="theme-toggle"
+      onclick={cycleTheme}
+      aria-label="Thème"
+      title="Thème : {currentTheme().label} — cliquer pour changer"
+    >{@html currentTheme().icon}</button>
   </header>
 
   <div class="body" style="--left-w:{leftW}px; --right-w:{rightW}px">
@@ -558,9 +544,6 @@
     opacity: 1;
     border-color: var(--accent);
   }
-  .thememenu {
-    position: relative;
-  }
   .theme-toggle {
     line-height: 1;
     padding: 0.3rem 0.45rem;
@@ -577,53 +560,6 @@
   .theme-toggle:hover {
     border-color: var(--accent);
     color: var(--accent);
-  }
-  .themebackdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    border: none;
-    background: transparent;
-    cursor: default;
-  }
-  .themepop {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 6px);
-    z-index: 21;
-    display: flex;
-    flex-direction: column;
-    min-width: 168px;
-    padding: 0.3rem;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--panel);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
-  }
-  .themepop button {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.4rem 0.55rem;
-    border: none;
-    border-radius: 7px;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-size: 0.9rem;
-    text-align: left;
-    cursor: pointer;
-  }
-  .themepop button:hover {
-    background: color-mix(in srgb, var(--accent) 14%, transparent);
-  }
-  .themepop button.active {
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .themepop .ti {
-    display: flex;
-    opacity: 0.9;
   }
 
   .seg {
@@ -646,8 +582,8 @@
     border-left: none;
   }
   .seg button.active {
-    background: var(--accent);
-    color: #fff;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1.5px var(--accent);
   }
   .seg.small button {
     padding: 0.25rem 0.6rem;
@@ -721,9 +657,9 @@
     border-color: var(--accent);
   }
   .opt.active {
-    background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
   .opt:disabled {
     opacity: 0.4;
