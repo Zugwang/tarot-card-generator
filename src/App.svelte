@@ -126,6 +126,21 @@
     }
   }
 
+  // --- resizable right rail (widen the single-card preview in mosaic) ---
+  let rightW = $state(210);
+  function startResize(e: PointerEvent) {
+    e.preventDefault();
+    const move = (ev: PointerEvent) => {
+      rightW = Math.min(640, Math.max(170, window.innerWidth - ev.clientX));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
   function onLoadFile(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -168,7 +183,7 @@
     </button>
   </header>
 
-  <div class="body">
+  <div class="body" style="--right-w:{rightW}px">
     <!-- Left: controls -->
     <aside class="rail left">
       <section class="ctl">
@@ -234,6 +249,14 @@
         </section>
 
         <section class="ctl">
+          <h2>Enseignes aux coins</h2>
+          <div class="seg small" role="group" aria-label="Nombre de coins">
+            <button class:active={editor.cornerCount === 2} onclick={() => (editor.cornerCount = 2)}>2 coins</button>
+            <button class:active={editor.cornerCount === 4} onclick={() => (editor.cornerCount = 4)}>4 coins</button>
+          </div>
+        </section>
+
+        <section class="ctl">
           <h2>Police des numéros</h2>
           <select class="fontsel" bind:value={editor.indexFont}>
             {#each FONTS as f}
@@ -258,6 +281,10 @@
               <button class="opt" class:active={editor.courtStyle === s.id} onclick={() => (editor.courtStyle = s.id)}>{s.label}</button>
             {/each}
           </div>
+          <label class="check" style="margin-top:.6rem">
+            <input type="checkbox" bind:checked={editor.courtCorners} />
+            Nº + enseigne aux coins
+          </label>
         </section>
 
         <section class="ctl">
@@ -329,6 +356,16 @@
         </div>
       {/if}
     </main>
+
+    <!-- Drag handle to widen the right rail (bigger single-card preview) -->
+    <div
+      class="resizer"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Redimensionner le panneau"
+      title="Glisser pour élargir la sélection"
+      onpointerdown={startResize}
+    ></div>
 
     <!-- Right: card picker / selection -->
     <aside class="rail right">
@@ -446,8 +483,19 @@
 
   .body {
     display: grid;
-    grid-template-columns: 250px 1fr 210px;
+    grid-template-columns: 250px 1fr 6px var(--right-w, 210px);
     min-height: 0;
+  }
+  .resizer {
+    cursor: col-resize;
+    background: var(--border);
+    opacity: 0.4;
+    transition: opacity 0.15s;
+    touch-action: none;
+  }
+  .resizer:hover {
+    opacity: 1;
+    background: var(--accent);
   }
   .rail {
     overflow: auto;
@@ -683,6 +731,9 @@
     .rail {
       border: none;
       border-bottom: 1px solid var(--border);
+    }
+    .resizer {
+      display: none;
     }
   }
 </style>

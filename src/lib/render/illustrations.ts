@@ -46,11 +46,16 @@ export function courtImage(suit: Suit, rank: CourtRank, style?: string): string 
   }
   if (style === 'danois') {
     // Two-headed Danish-pattern engravings (BnF, Georges Marteau — public
-    // domain). Roi / Dame / Valet only; no Cavalier.
-    return rank === 'cavalier' ? null : `/art/courts/danois/${suit}-${rank}.jpg`;
+    // domain). Roi / Dame / Valet only; no Cavalier. Scanned paper background
+    // removed → transparent WebP so the card colour shows through.
+    return rank === 'cavalier' ? null : `/art/courts/danois/${suit}-${rank}.webp`;
   }
-  if (style === 'grimaud' || style === 'marseille') {
-    return `/art/courts/${style}/${suit}-${rank}.jpg`;
+  if (style === 'grimaud') {
+    // Trad 1898 — background cleaned to transparent WebP.
+    return `/art/courts/grimaud/${suit}-${rank}.webp`;
+  }
+  if (style === 'marseille') {
+    return `/art/courts/marseille/${suit}-${rank}.jpg`;
   }
   return null; // 'blanc' or unknown
 }

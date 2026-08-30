@@ -42,6 +42,10 @@ export interface RenderOptions {
   atoutStyle?: string;
   /** Font id (see fonts.ts) for the generated corner indices. */
   indexFont?: string;
+  /** Number of corners bearing the index (number + suit): 2 (default) or 4. */
+  cornerCount?: 2 | 4;
+  /** Also draw the corner index over illustrated court cards (figures). */
+  courtCorners?: boolean;
   /** Back motif (used by the 'back' card). */
   backConfig?: { templateId: string; color: string; suit?: Suit; variant?: string };
   /** Free-mode override for this card (layers on top of / instead of the base). */
@@ -111,7 +115,11 @@ function cornerIndex(card: Card & { suit: Suit }, opts: RenderOptions, w: number
     `<g transform="translate(${round(x)} ${round(y)}) rotate(${rot})">` +
     `<text x="0" y="0" text-anchor="middle" font-family="${ff}" font-size="26" font-weight="600" fill="${color}">${label}</text>` +
     `<g transform="translate(-11 6) scale(0.22)">${mini}</g></g>`;
-  return block(0.104 * w, 0.097 * h, 0) + block(w - 0.104 * w, h - 0.097 * h, 180);
+  let out = block(0.104 * w, 0.097 * h, 0) + block(w - 0.104 * w, h - 0.097 * h, 180);
+  if (opts.cornerCount === 4) {
+    out += block(w - 0.104 * w, 0.097 * h, 0) + block(0.104 * w, h - 0.097 * h, 180);
+  }
+  return out;
 }
 
 function renderPips(card: Card & { suit: Suit; rank: number }, tpl: PipTemplate, pipSize: number, opts: RenderOptions, w: number, h: number): string {
@@ -173,6 +181,10 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
     const font = opts.indexFont;
     els.push(textL(label, color, 0.104, 0.088, 26, 0, font), sym(suit, 0.104 * w, 0.14 * h, 22, 0));
     els.push(textL(label, color, 1 - 0.104, 1 - 0.088, 26, 180, font), sym(suit, w - 0.104 * w, h - 0.14 * h, 22, 180));
+    if (opts.cornerCount === 4) {
+      els.push(textL(label, color, 1 - 0.104, 0.088, 26, 0, font), sym(suit, w - 0.104 * w, 0.14 * h, 22, 0));
+      els.push(textL(label, color, 0.104, 1 - 0.088, 26, 180, font), sym(suit, 0.104 * w, h - 0.14 * h, 22, 180));
+    }
   };
 
   switch (card.kind) {
@@ -186,8 +198,10 @@ export function cardElements(card: Card, opts: RenderOptions = {}): FreeLayer[] 
       break;
     case 'court': {
       const img = courtImage(card.suit, card.rank, opts.courtStyle);
-      if (img) els.push(imageL(img, 0.5, 0.5, h * 0.94, 0));
-      else corners(card.suit, cardLabel(card));
+      if (img) {
+        els.push(imageL(img, 0.5, 0.5, h * 0.94, 0));
+        if (opts.courtCorners) corners(card.suit, cardLabel(card));
+      } else corners(card.suit, cardLabel(card));
       break;
     }
     case 'atout':
@@ -227,8 +241,10 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
         break;
       case 'court': {
         const img = courtImage(card.suit, card.rank, opts.courtStyle);
-        if (img) body = renderImage(cardId(card), img, w, h, opts.imageFit);
-        else corners = cornerIndex(card, opts, w, h); // 'blanc' = index only
+        if (img) {
+          body = renderImage(cardId(card), img, w, h, opts.imageFit);
+          if (opts.courtCorners) corners = cornerIndex(card, opts, w, h);
+        } else corners = cornerIndex(card, opts, w, h); // 'blanc' = index only
         break;
       }
       case 'atout':

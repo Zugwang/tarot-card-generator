@@ -22,6 +22,8 @@ const KEYS = [
   'courtStyle',
   'atoutStyle',
   'indexFont',
+  'cornerCount',
+  'courtCorners',
   'illustrationFit',
   'back',
   'freeCards',

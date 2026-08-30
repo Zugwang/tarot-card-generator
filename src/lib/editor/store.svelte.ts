@@ -49,6 +49,10 @@ export const editor = $state({
   atoutStyle: 'marseille' as string,
   /** Font id for the generated card indices (corner numbers/letters). */
   indexFont: 'georgia' as string,
+  /** Index corners (number + suit): 2 (classic) or 4. */
+  cornerCount: 2 as 2 | 4,
+  /** Overlay the corner index on illustrated figures (court cards). */
+  courtCorners: false,
   selectedId: null as string | null,
   back: { templateId: 'quadrille', color: '#8a1f2b', suit: 'pique' as Suit },
   /** Free-mode overrides, keyed by card id. */
@@ -177,6 +181,8 @@ export function cardRenderOptions(): RenderOptions {
     courtStyle: editor.courtStyle,
     atoutStyle: editor.atoutStyle,
     indexFont: editor.indexFont,
+    cornerCount: editor.cornerCount,
+    courtCorners: editor.courtCorners,
     imageFit: editor.illustrationFit,
     backConfig: editor.back,
   };

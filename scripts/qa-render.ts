@@ -4,19 +4,18 @@ import { pipTemplate } from '../src/lib/render/pipLayouts';
 import { writeFileSync } from 'node:fs';
 
 const tarot = generateDeck(78);
-const roiTrefle = tarot.find((c) => c.kind === 'court' && c.suit === 'trefle' && c.rank === 'roi')!;
-const dameCoeur = tarot.find((c) => c.kind === 'court' && c.suit === 'coeur' && c.rank === 'dame')!;
-const valetPique = tarot.find((c) => c.kind === 'court' && c.suit === 'pique' && c.rank === 'valet')!;
-const oracle = generateOracleDeck();
+const roi = (suit: string) => tarot.find((c) => c.kind === 'court' && c.suit === suit && c.rank === 'roi')!;
+const dame = (suit: string) => tarot.find((c) => c.kind === 'court' && c.suit === suit && c.rank === 'dame')!;
+const pip7 = tarot.find((c) => c.kind === 'pip' && c.suit === 'coeur' && c.rank === 7)!;
 
-const base = { width: 250, height: 455, pipTemplate: pipTemplate('classic') };
+const base = { width: 250, height: 455, pipTemplate: pipTemplate('classic'), cardBg: '#efe6d0' };
 const cards: Record<string, string> = {
-  danois_roi_t: renderCardSVG(roiTrefle, { ...base, courtStyle: 'danois' }),
-  danois_dame_c: renderCardSVG(dameCoeur, { ...base, courtStyle: 'danois' }),
-  danois_valet_p: renderCardSVG(valetPique, { ...base, courtStyle: 'danois' }),
-  oracle_05: renderCardSVG(oracle[5], base),
-  oracle_40: renderCardSVG(oracle[40], base),
-  oracle_77: renderCardSVG(oracle[77], base),
+  danois_roi_bg: renderCardSVG(roi('pique'), { ...base, courtStyle: 'danois' }),
+  danois_roi_corners4: renderCardSVG(roi('coeur'), { ...base, courtStyle: 'danois', courtCorners: true, cornerCount: 4 }),
+  grimaud_dame_bg: renderCardSVG(dame('carreau'), { ...base, courtStyle: 'grimaud' }),
+  poker_roi_bg: renderCardSVG(roi('trefle'), { ...base, courtStyle: 'poker' }),
+  pip7_4corners: renderCardSVG(pip7, { ...base, cornerCount: 4 }),
+  pip7_2corners: renderCardSVG(pip7, { ...base, cornerCount: 2 }),
 };
 for (const [k, svg] of Object.entries(cards)) writeFileSync(`dist/qa-${k}.svg`, svg);
 console.log('wrote', Object.keys(cards).join(', '));
