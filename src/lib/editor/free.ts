@@ -28,6 +28,12 @@ export function emptyFreeCard(): FreeCard {
   return { hideBase: false, layers: [] };
 }
 
+/** Canonical rotation range shared by the slider and the mouse handle: (-180, 180]. */
+export function normalizeAngle(deg: number): number {
+  const a = ((deg % 360) + 360) % 360; // [0, 360)
+  return a > 180 ? a - 360 : a; // (-180, 180]
+}
+
 export const newLayerId = (): string =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()

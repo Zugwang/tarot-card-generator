@@ -96,6 +96,10 @@
   let busy = $state('');
   let scope = $state<'carte' | 'jeu'>('carte');
   let asZip = $state(false);
+  /** Custom export base name (empty = automatic default). */
+  let exportName = $state('');
+  /** Opt-in: append an incrementing suffix (-01, -02…) the site remembers. */
+  let autoNumber = $state(false);
   async function run(label: string, fn: () => Promise<void>) {
     busy = label;
     try {
@@ -106,25 +110,50 @@
       busy = '';
     }
   }
+  /** Default base name when the field is left empty. */
+  function defaultBase(): string {
+    if (scope === 'jeu') return `tarotier-${editor.deckKind === 'oracle' ? 'oracle' : editor.deckSize}`;
+    return selectedCard ? cardId(selectedCard) : 'carte';
+  }
+  /** Next counter for a base name, remembered across sessions (localStorage). */
+  function bumpSeq(base: string): number {
+    let map: Record<string, number> = {};
+    try {
+      map = JSON.parse(localStorage.getItem('tarotier.exportSeq') || '{}');
+    } catch {
+      /* private window — start fresh */
+    }
+    const n = (map[base] || 0) + 1;
+    map[base] = n;
+    try {
+      localStorage.setItem('tarotier.exportSeq', JSON.stringify(map));
+    } catch {
+      /* quota / private window — the number still applies for this export */
+    }
+    return n;
+  }
+  /** Sanitize + resolve the base name (with optional running number). */
+  function resolveBase(): string {
+    const base = (exportName.trim() || defaultBase()).replace(/[/\\:*?"<>|]+/g, '-').slice(0, 80) || 'tarotier';
+    return autoNumber ? `${base}-${String(bumpSeq(base)).padStart(2, '0')}` : base;
+  }
   function doExport(fmt: 'png' | 'svg') {
     const cols = editor.deckKind === 'oracle' || editor.deckSize >= 78 ? 14 : 13;
+    const base = resolveBase();
     if (scope === 'jeu') {
       const entries = displayCards.map((c) => ({ name: cardId(c), svg: renderOne(c) }));
       if (asZip) {
-        run(`ZIP ${fmt.toUpperCase()}…`, () => exportZip(entries, fmt, `tarotier-${editor.deckSize}-${fmt}.zip`));
+        run(`ZIP ${fmt.toUpperCase()}…`, () => exportZip(entries, fmt, `${base}-${fmt}.zip`));
       } else {
         const svgs = entries.map((e) => e.svg);
         run(`Planche ${fmt.toUpperCase()}…`, () =>
-          fmt === 'png'
-            ? exportSheetPng(svgs, cols, `tarotier-${editor.deckSize}.png`)
-            : exportSheetSvg(svgs, cols, `tarotier-${editor.deckSize}.svg`),
+          fmt === 'png' ? exportSheetPng(svgs, cols, `${base}.png`) : exportSheetSvg(svgs, cols, `${base}.svg`),
         );
       }
     } else if (selectedCard) {
       const svg = renderOne(selectedCard);
-      const name = cardId(selectedCard);
       run(`Export ${fmt.toUpperCase()}…`, () =>
-        fmt === 'png' ? exportPng(svg, `${name}.png`) : exportSvg(svg, `${name}.svg`),
+        fmt === 'png' ? exportPng(svg, `${base}.png`) : exportSvg(svg, `${base}.svg`),
       );
     }
   }
@@ -225,10 +254,18 @@
             <button class:active={scope === 'carte'} onclick={() => (scope = 'carte')}>{nounC}</button>
             <button class:active={scope === 'jeu'} onclick={() => (scope = 'jeu')}>Jeu</button>
           </div>
+          <input
+            class="exportname"
+            type="text"
+            bind:value={exportName}
+            placeholder="Nom d'export : {defaultBase()}"
+            aria-label="Nom du fichier d'export"
+          />
           <div class="opts">
             <button class="opt" onclick={() => doExport('png')} disabled={!!busy || (scope === 'carte' && !selectedCard)}>Export PNG</button>
             <button class="opt" onclick={() => doExport('svg')} disabled={!!busy || (scope === 'carte' && !selectedCard)}>Export SVG</button>
           </div>
+          <label class="check"><input type="checkbox" bind:checked={autoNumber} /> Numéroter (-01, -02…)</label>
           {#if scope === 'jeu'}
             <label class="check"><input type="checkbox" bind:checked={asZip} /> Fichiers séparés (zip)</label>
           {/if}
@@ -653,6 +690,20 @@
     align-items: center;
     gap: 0.4rem;
     font-size: 0.82rem;
+  }
+  .exportname {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+    font-size: 0.85rem;
+  }
+  .exportname:focus {
+    outline: none;
+    border-color: var(--accent);
   }
   .palette {
     display: grid;

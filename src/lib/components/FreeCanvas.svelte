@@ -2,7 +2,7 @@
   import { type Card, cardId } from '../model/deck';
   import { renderCardSVG } from '../render/card';
   import { editor, cardRenderOptions, formatWH } from '../editor/store.svelte';
-  import type { FreeLayer } from '../editor/free';
+  import { type FreeLayer, normalizeAngle } from '../editor/free';
 
   let { card }: { card: Card } = $props();
 
@@ -15,7 +15,7 @@
 
   let svgEl: SVGSVGElement;
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-  const clampSize = (v: number) => Math.max(8, Math.min(400, v));
+  const clampSize = (v: number) => Math.max(8, Math.min(600, v));
 
   /** Half-extents of a layer's box in card units. */
   function half(l: FreeLayer) {
@@ -80,7 +80,7 @@
       l.size = clampSize(drag.origSize * (d / drag.startDist));
     } else {
       const c = cardPt(e);
-      l.rot = Math.round((Math.atan2(c.y - l.y * h, c.x - l.x * w) * 180) / Math.PI + 90);
+      l.rot = normalizeAngle(Math.round((Math.atan2(c.y - l.y * h, c.x - l.x * w) * 180) / Math.PI + 90));
     }
   }
   function end() {

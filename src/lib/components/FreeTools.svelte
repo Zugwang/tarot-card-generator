@@ -136,7 +136,7 @@
       </label>
     {/if}
     <label class="slider">Taille <span class="val">{Math.round(selected.size)}</span>
-      <input type="range" min="8" max="180" step="1" bind:value={selected.size} />
+      <input type="range" min="8" max="600" step="1" bind:value={selected.size} />
     </label>
     <label class="slider">Rotation <span class="val">{Math.round(selected.rot)}°</span>
       <input type="range" min="-180" max="180" step="1" bind:value={selected.rot} />
