@@ -5,8 +5,8 @@ export const RWS_NAMES: string[] = ["Fool", "Magician", "High Priestess", "Empre
 
 export const SYSSK_NAMES: string[] = ["Fo0ol", "Witch", "High Priestrss", "Empress", "Emperor", "Hierophant", "Lovers", "Chariot", "Strength", "Hermit", "Wheel of Fortune", "Justice", "Gallow's Truth", "Death", "Temperance", "Devil", "Tower", "Star", "Moon", "Sun", "Judgment", "Void", "Happy Rabbit", "Ace of Wands", "Two of Wands", "Three of Wands", "Four of Wands", "Five of Wands", "Six of Wands", "Seven of Wands", "Eight of Wands", "Nine of Wands", "Ten of Wands", "Page of Wands", "Knight of Wands", "Queen of Wands", "King of Wands", "Ace of Cups", "Two of Cups", "Three of Cups", "Four of Cups", "Five of Cups", "Six of Cups", "Seven of Cups", "Eight of Cups", "Nine of Cups", "Ten of Cups", "Page of Cups", "Knight of Cups", "Queen of Cups", "King of Cups", "Ace of Swords", "Two of Swords", "Three of Swords", "Four of Swords", "Five of Swords", "Six of Swords", "Seven of Swords", "Eight of Swords", "Nine of Swords", "Ten of Swords", "Page of Swords", "Knight of Swords", "Queen of Swords", "King of Swords", "Ace of Coins", "Two of Coins", "Three of Coins", "Four of Coins", "Five of Coins", "Six of Coins", "Seven of Coins", "Eight of Coins", "Nine of Coins", "Ten of Coins", "Page of Coins", "Knight of Coins", "Queen of Coins", "King of Coins"];
 
-export interface ImageDeck { label: string; names: string[]; copyrighted?: boolean; }
+export interface ImageDeck { label: string; short: string; names: string[]; copyrighted?: boolean; }
 export const IMAGE_DECKS: Record<string, ImageDeck> = {
-  rws: { label: 'Rider-Waite (RWS)', names: RWS_NAMES },
-  syssk: { label: 'Tarot of Syssk', names: SYSSK_NAMES, copyrighted: true },
+  rws: { label: 'Rider-Waite (RWS)', short: 'RWS', names: RWS_NAMES },
+  syssk: { label: 'Tarot of Syssk', short: 'Syssk', names: SYSSK_NAMES, copyrighted: true },
 };

@@ -251,7 +251,7 @@
       {/each}
       <button class:active={editor.deckKind === 'oracle'} onclick={() => (editor.deckKind = 'oracle')} title="Oracle de Marseille — 78 lames">Oracle</button>
       {#each imageDeckIds as id}
-        <button class:active={editor.deckKind === 'image' && editor.imageSet === id} onclick={() => { editor.deckKind = 'image'; editor.imageSet = id; }} title={IMAGE_DECKS[id].label}>{IMAGE_DECKS[id].label}</button>
+        <button class:active={editor.deckKind === 'image' && editor.imageSet === id} onclick={() => { editor.deckKind = 'image'; editor.imageSet = id; }} title={IMAGE_DECKS[id].label}>{IMAGE_DECKS[id].short}</button>
       {/each}
     </div>
     {#if editor.tab === 'cartes'}
