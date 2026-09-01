@@ -36,6 +36,18 @@ export function serializeProject(): string {
   return JSON.stringify(out, null, 2);
 }
 
+/** Compact JSON snapshot of the serializable editor state (used by undo/redo). */
+export function snapshotState(): string {
+  const out: Record<string, unknown> = {};
+  for (const k of KEYS) out[k] = editor[k];
+  return JSON.stringify(out);
+}
+
+/** Restore a compact snapshot produced by snapshotState(). */
+export function restoreState(json: string): void {
+  applyProject(JSON.parse(json));
+}
+
 export function saveProject(filename = 'tarotier-projet.json'): void {
   downloadText(serializeProject(), filename);
 }

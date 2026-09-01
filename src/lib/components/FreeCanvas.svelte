@@ -2,7 +2,7 @@
   import { type Card, cardId } from '../model/deck';
   import { renderCardSVG } from '../render/card';
   import { editor, cardRenderOptions, formatWH } from '../editor/store.svelte';
-  import { type FreeLayer, normalizeAngle } from '../editor/free';
+  import { type FreeLayer, normalizeAngle, isCover } from '../editor/free';
 
   let { card }: { card: Card } = $props();
 
@@ -31,6 +31,26 @@
     return { x: f.x * w, y: f.y * h };
   }
 
+  /** Is a card-unit point inside a layer's (rotated) bounding box? */
+  function inside(l: FreeLayer, p: { x: number; y: number }) {
+    const b = half(l);
+    const a = (l.rot * Math.PI) / 180;
+    const dx = p.x - l.x * w;
+    const dy = p.y - l.y * h;
+    const rx = dx * Math.cos(a) + dy * Math.sin(a); // rotate point by -rot into the box frame
+    const ry = -dx * Math.sin(a) + dy * Math.cos(a);
+    return Math.abs(rx) <= b.w && Math.abs(ry) <= b.h;
+  }
+  /** Pick the layer to grab at a point. Repeated clicks at the same spot walk
+   *  DOWN the stack of overlapping layers, so a covered layer becomes reachable. */
+  function pickAt(p: { x: number; y: number }, currentId: string | null): FreeLayer | null {
+    const hits = layers.filter((l) => !isCover(l) && inside(l, p));
+    if (!hits.length) return null;
+    const topDown = [...hits].reverse(); // last drawn = visually on top
+    const i = topDown.findIndex((l) => l.id === currentId);
+    return topDown[i >= 0 ? (i + 1) % topDown.length : 0];
+  }
+
   type Drag =
     | { mode: 'move'; id: string; ox: number; oy: number; sx: number; sy: number }
     | { mode: 'resize'; id: string; origSize: number; startDist: number }
@@ -45,10 +65,12 @@
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', end);
   }
-  function startMove(e: PointerEvent, l: FreeLayer) {
+  function startMove(e: PointerEvent, lTop: FreeLayer) {
     e.stopPropagation();
+    // Cycle to the layer underneath if the top one is already selected.
+    const target = pickAt(cardPt(e), editor.freeLayerId) ?? lTop;
     const f = frac(e);
-    begin({ mode: 'move', id: l.id, ox: l.x, oy: l.y, sx: f.x, sy: f.y }, l.id);
+    begin({ mode: 'move', id: target.id, ox: target.x, oy: target.y, sx: f.x, sy: f.y }, target.id);
   }
   function startResize(e: PointerEvent, l: FreeLayer) {
     e.stopPropagation();
@@ -102,6 +124,7 @@
     role="presentation"
   >
     {#each layers as l (l.id)}
+      {#if !isCover(l)}
       {@const b = half(l)}
       <rect
         x={l.x * w - b.w}
@@ -116,9 +139,10 @@
         tabindex="-1"
         onpointerdown={(e) => startMove(e, l)}
       />
+      {/if}
     {/each}
 
-    {#if selected}
+    {#if selected && !isCover(selected)}
       {@const b = half(selected)}
       {@const cx = selected.x * w}
       {@const cy = selected.y * h}

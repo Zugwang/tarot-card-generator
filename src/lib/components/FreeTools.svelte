@@ -86,6 +86,7 @@
     if (l.type === 'suit') return SUIT_LABELS[l.suit];
     if (l.type === 'text') return `« ${l.text} »`;
     if (l.type === 'shape') return { rect: 'Rectangle', ellipse: 'Cercle', line: 'Ligne' }[l.shape];
+    if (l.type === 'image' && l.cover) return '🖼 Image de fond';
     return 'Image';
   }
 </script>
@@ -196,9 +197,11 @@
         <input type="range" min="0" max="20" step="1" bind:value={selected.strokeWidth} />
       </label>
     {/if}
-    <label class="slider">Taille <span class="val">{Math.round(selected.size)}</span>
-      <input type="range" min="8" max="600" step="1" bind:value={selected.size} />
-    </label>
+    {#if !(selected.type === 'image' && selected.cover)}
+      <label class="slider">Taille <span class="val">{Math.round(selected.size)}</span>
+        <input type="range" min="8" max="600" step="1" bind:value={selected.size} />
+      </label>
+    {/if}
     <label class="slider">Rotation <span class="val">{Math.round(selected.rot)}°</span>
       <input type="range" min="-180" max="180" step="1" bind:value={selected.rot} />
     </label>

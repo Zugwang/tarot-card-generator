@@ -102,6 +102,8 @@ function renderLayer(layer: FreeLayer, w: number, h: number): string {
           : `<line x1="${-hs}" y1="0" x2="${hs}" y2="0" stroke="${layer.stroke}" stroke-width="${layer.strokeWidth}" stroke-linecap="round"/>`;
     return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})">${shape}</g>`;
   }
+  // Cover image layer: fills the whole card (crop to fill), pinned as background.
+  if (layer.cover) return renderCoverImage(layer.href, w, h, layer.rot);
   const s = layer.size;
   return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})"><image href="${layer.href}" xlink:href="${layer.href}" x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet"/></g>`;
 }
@@ -285,13 +287,6 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
       }
     }
 
-  const bg = free?.bgImage ? renderCoverImage(free.bgImage.href, w, h, free.bgImage.rot) : '';
-  const overlay = free?.layers.length ? free.layers.map((l) => renderLayer(l, w, h)).join('') : '';
-
-  // Clip all content to the rounded card shape so overlay images / free layers
-  // can't spill past the border (unified rounded corners on every card).
-  const clipId = `cardclip-${cardId(card)}`;
-
   // Optional contrast halo: a white "sticker" outline behind the suits/indices
   // so they stay legible over a busy background (e.g. Commons images).
   const haloId = `halo-${cardId(card)}`;
@@ -302,7 +297,20 @@ export function renderCardSVG(card: Card, opts: RenderOptions = {}): string {
       `<feComposite in2="o" operator="in" result="ol"/>` +
       `<feMerge><feMergeNode in="ol"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
     : '';
-  const pipContent = opts.contrastPips ? `<g filter="url(#${haloId})">${body}${corners}</g>` : body + corners;
+  const halo = (s: string) => (opts.contrastPips ? `<g filter="url(#${haloId})">${s}</g>` : s);
+
+  const bg = free?.bgImage ? renderCoverImage(free.bgImage.href, w, h, free.bgImage.rot) : '';
+  // Free layers: images (incl. the Commons cover) render as-is; suits/text/shapes
+  // get the contrast halo too, since generated pips can live as layers.
+  const overlay = free?.layers.length
+    ? free.layers.map((l) => (l.type === 'image' ? renderLayer(l, w, h) : halo(renderLayer(l, w, h)))).join('')
+    : '';
+
+  // Clip all content to the rounded card shape so overlay images / free layers
+  // can't spill past the border (unified rounded corners on every card).
+  const clipId = `cardclip-${cardId(card)}`;
+
+  const pipContent = halo(body + corners);
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +

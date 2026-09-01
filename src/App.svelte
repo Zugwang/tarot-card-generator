@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { generateDeck, generateOracleDeck, generateImageDeck, cardId, cardName, DECK_SIZES, BACK_CARD, type Card } from './lib/model/deck';
   import { IMAGE_DECKS } from './lib/render/tarotData';
   import {
@@ -21,7 +22,7 @@
   import { FONTS } from './lib/render/fonts';
   import FreeCanvas from './lib/components/FreeCanvas.svelte';
   import FreeTools from './lib/components/FreeTools.svelte';
-  import { renderCardSVG, FORMATS, type FormatId } from './lib/render/card';
+  import { renderCardSVG, cardElements, FORMATS, type FormatId } from './lib/render/card';
   import { PIP_TEMPLATES } from './lib/render/pipLayouts';
   import { BACK_TEMPLATES } from './lib/render/back';
   import { exportPng, exportSheetPng } from './lib/export/png';
@@ -29,6 +30,8 @@
   import { exportZip } from './lib/export/zip';
   import { saveProject, loadProjectFromFile } from './lib/editor/project';
   import { randomCommonsImage } from './lib/editor/wikimedia';
+  import { history, commit, undo, redo, primeHistory, isRestoring } from './lib/editor/history.svelte';
+  import { newCoverLayer } from './lib/editor/free';
 
   const COURT_STYLES = [
     { id: 'marseille', label: 'Marseille' },
@@ -65,6 +68,50 @@
     if (editor.tab === 'libre' && selectedCard) ensureExploded(selectedCard);
   });
 
+  // --- undo/redo history: a single debounced watcher records a step whenever
+  // the editor state settles. Reading the fields below subscribes this effect
+  // to every meaningful change; a continuous gesture collapses into one step.
+  let primed = false;
+  let histTimer: ReturnType<typeof setTimeout> | undefined;
+  function editorFingerprint(): number {
+    // Cheap read of all reactive state (no big string copies: only href *length*).
+    const e = editor;
+    let n = `${e.deckKind}|${e.deckSize}|${e.imageSet}|${e.format}|${e.customFormat.w}x${e.customFormat.h}`.length;
+    n += e.cardBg.length + e.pipSize + (e.cornerCount ?? 0) + (e.contrastPips ? 1 : 0);
+    n += e.pipTemplateId.length + e.courtStyle.length + e.atoutStyle.length + e.indexFont.length + e.illustrationFit.length;
+    for (const s of Object.values(e.suitColors)) n += s.length;
+    for (const s of Object.values(e.suitVariants)) n += s.length;
+    for (const v of Object.values(e.customSuitImages)) n += v ? v.length : 0;
+    n += e.back.color.length + e.back.templateId.length + (e.back.suit?.length ?? 0);
+    for (const id of Object.keys(e.freeCards)) {
+      const f = e.freeCards[id];
+      n += id.length + (f.hideBase ? 1 : 0) + (f.bgImage ? f.bgImage.href.length + f.bgImage.rot : 0);
+      for (const l of f.layers) {
+        n += l.id.length + Math.round(l.x * 1e4) + Math.round(l.y * 1e4);
+        n += Math.round(l.size * 10) + Math.round(l.rot * 10);
+        if (l.type === 'text') n += l.text.length;
+        if (l.type === 'image') n += l.href.length + (l.cover ? 1 : 0);
+        if (l.type === 'suit') n += (l.color?.length ?? 0) + (l.variant?.length ?? 0);
+        if (l.type === 'shape') n += l.fill.length + l.stroke.length + l.strokeWidth;
+      }
+    }
+    return n;
+  }
+  $effect(() => {
+    editorFingerprint(); // subscribe to all editor state
+    if (!primed || isRestoring()) {
+      clearTimeout(histTimer);
+      return;
+    }
+    clearTimeout(histTimer);
+    histTimer = setTimeout(commit, 350);
+  });
+  onMount(() => {
+    // Prime the baseline once (untracked — must not re-run and wipe history).
+    primeHistory();
+    primed = true;
+  });
+
   const renderOne = (c: Card) =>
     renderCardSVG(c, { ...cardRenderOptions(), freeCard: editor.freeCards[cardId(c)] });
 
@@ -81,6 +128,19 @@
   }
   function onKey(e: KeyboardEvent) {
     const tag = (e.target as HTMLElement)?.tagName;
+    const typing = tag === 'TEXTAREA' || (tag === 'INPUT' && ['text', 'number', 'search', ''].includes((e.target as HTMLInputElement).type));
+    // Undo / redo — global, but leave native undo to text fields being typed in.
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !typing) {
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'y' && !typing) {
+      e.preventDefault();
+      redo();
+      return;
+    }
     if (tag === 'INPUT' || tag === 'TEXTAREA') return; // don't hijack typing
     if (editor.tab === 'libre') {
       if (!selectedCard) return;
@@ -216,8 +276,11 @@
       try {
         const pick = await randomCommonsImage();
         const rot = pick.width > pick.height ? 90 : 0; // détecte le sens
-        // hideBase:false → the image is a BACKGROUND; suits/indices stay drawn on top.
-        editor.freeCards[cardId(card)] = { hideBase: false, layers: [], bgImage: { href: pick.dataUrl, rot } };
+        // Integrated into the layer system: the Commons image is the BOTTOM layer
+        // (cover-fit), and the card's enseignes/numéros are exploded as layers on
+        // top of it — so the image stays behind and the symbols always in front.
+        const cover = newCoverLayer(pick.dataUrl, rot);
+        editor.freeCards[cardId(card)] = { hideBase: true, layers: [cover, ...cardElements(card, cardRenderOptions())] };
       } catch {
         /* skip this card, keep going */
       }
@@ -230,7 +293,7 @@
   function onLoadFile(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) loadProjectFromFile(file).catch((err) => alert('Projet invalide : ' + err.message));
+    if (file) loadProjectFromFile(file).then(primeHistory).catch((err) => alert('Projet invalide : ' + err.message));
     input.value = '';
   }
 </script>
@@ -264,6 +327,11 @@
         <button class:active={editor.viewMode === 'strip'} onclick={() => (editor.viewMode = 'strip')}>Bandeau</button>
       </div>
     {/if}
+
+    <div class="seg" role="group" aria-label="Historique">
+      <button onclick={undo} disabled={!history.canUndo} title="Annuler (Ctrl+Z)" aria-label="Annuler">↶</button>
+      <button onclick={redo} disabled={!history.canRedo} title="Rétablir (Ctrl+Maj+Z)" aria-label="Rétablir">↷</button>
+    </div>
 
     <a class="reflink" href="/references.html" title="Références & crédits">Références</a>
     <button

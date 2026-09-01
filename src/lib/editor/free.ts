@@ -16,7 +16,7 @@ export type ShapeKind = 'rect' | 'ellipse' | 'line';
 export type FreeLayer =
   | (BaseLayer & { type: 'suit'; suit: Suit; variant?: string; color?: string })
   | (BaseLayer & { type: 'text'; text: string; color: string; font?: string })
-  | (BaseLayer & { type: 'image'; href: string })
+  | (BaseLayer & { type: 'image'; href: string; cover?: boolean })
   | (BaseLayer & { type: 'shape'; shape: ShapeKind; fill: string; stroke: string; strokeWidth: number });
 
 export interface FreeCard {
@@ -52,6 +52,15 @@ export function newTextLayer(): FreeLayer {
 }
 export function newImageLayer(href: string): FreeLayer {
   return { ...base(), type: 'image', href, size: 90 };
+}
+/** Full-card background image pinned to the bottom of the layer stack (cover-fit).
+ *  `rot` (0 or 90) orients a landscape source into a portrait card. */
+export function newCoverLayer(href: string, rot = 0): FreeLayer {
+  return { ...base(), type: 'image', href, cover: true, size: 0, rot };
+}
+/** A cover image layer fills the whole card and isn't directly draggable. */
+export function isCover(l: FreeLayer): boolean {
+  return l.type === 'image' && (l as { cover?: boolean }).cover === true;
 }
 export function newShapeLayer(shape: ShapeKind): FreeLayer {
   return { ...base(), type: 'shape', shape, size: 80, fill: shape === 'line' ? 'none' : '#8a1f2b', stroke: '#161616', strokeWidth: shape === 'line' ? 3 : 0 };

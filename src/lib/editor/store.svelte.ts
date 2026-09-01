@@ -159,13 +159,18 @@ export function standardPalette(): void {
   setNoire('#161616');
 }
 
-/** Effective card dimensions from the current format choice. */
+/** Round to an even integer so the card center (w/2, h/2) — and every
+ *  point-symmetric element (ace, opposite corners) — lands on a whole unit
+ *  instead of a half-pixel, which showed up as a slight enseigne misalignment. */
+const even = (n: number) => 2 * Math.round(n / 2);
+
+/** Effective card dimensions from the current format choice (always even). */
 export function formatWH(): { w: number; h: number } {
   if (editor.format === 'libre') {
-    return { w: Math.max(60, editor.customFormat.w), h: Math.max(60, editor.customFormat.h) };
+    return { w: even(Math.max(60, editor.customFormat.w)), h: even(Math.max(60, editor.customFormat.h)) };
   }
   const f = FORMATS[editor.format];
-  return { w: f.w, h: f.h };
+  return { w: even(f.w), h: even(f.h) };
 }
 
 /** Current render options derived from editor state (without the per-card free layer). */
