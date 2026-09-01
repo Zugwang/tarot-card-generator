@@ -11,12 +11,23 @@ export interface BaseLayer {
   y: number;
   size: number;
   rot: number;
+  /** Optional user-given name (double-click the layer to rename). */
+  name?: string;
+  /** Layer opacity 0..1 (default 1). */
+  opacity?: number;
 }
 export type ShapeKind = 'rect' | 'ellipse' | 'line';
+/** Crop rectangle over the source image, as fractions 0..1 (x,y = top-left). */
+export interface Crop {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 export type FreeLayer =
   | (BaseLayer & { type: 'suit'; suit: Suit; variant?: string; color?: string })
   | (BaseLayer & { type: 'text'; text: string; color: string; font?: string })
-  | (BaseLayer & { type: 'image'; href: string; cover?: boolean })
+  | (BaseLayer & { type: 'image'; href: string; cover?: boolean; crop?: Crop })
   | (BaseLayer & { type: 'shape'; shape: ShapeKind; fill: string; stroke: string; strokeWidth: number });
 
 export interface FreeCard {

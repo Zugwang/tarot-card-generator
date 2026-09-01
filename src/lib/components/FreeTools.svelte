@@ -1,21 +1,22 @@
 <script lang="ts">
   import { type Card, cardId, cardName, SUITS, type Suit } from '../model/deck';
   import { suitColor, suitSymbol } from '../render/suits';
-  import { editor, ensureFree, reorderLayer, duplicateLayer, regenerateCard } from '../editor/store.svelte';
+  import { editor, ensureFree, reorderLayer, duplicateLayer, regenerateCard, moveLayer, renameLayer } from '../editor/store.svelte';
   import { newSuitLayer, newTextLayer, newImageLayer, newShapeLayer, type FreeLayer } from '../editor/free';
   import { FONTS } from '../render/fonts';
   import { assets, rememberImage, forgetImage } from '../editor/assets.svelte';
-  import { randomCommonsImage, type CommonsPick } from '../editor/wikimedia';
+  import { randomImage, IMAGE_SOURCES, type ImagePick } from '../editor/sources';
+  import SliderField from './SliderField.svelte';
 
   let { card }: { card: Card } = $props();
 
   let randomBusy = $state(false);
-  let lastPick = $state<CommonsPick | null>(null);
+  let lastPick = $state<ImagePick | null>(null);
   async function addRandom() {
     if (randomBusy) return;
     randomBusy = true;
     try {
-      const pick = await randomCommonsImage();
+      const pick = await randomImage(editor.imageSource);
       rememberImage(pick.dataUrl);
       add(newImageLayer(pick.dataUrl));
       lastPick = pick;
@@ -26,10 +27,45 @@
     }
   }
 
+  // --- layer list: numbering (top = 1), rename, drag-and-drop reorder ---
+  let renamingId = $state<string | null>(null);
+  let renameDraft = $state('');
+  function startRename(l: FreeLayer) {
+    renamingId = l.id;
+    renameDraft = l.name ?? layerLabel(l);
+  }
+  function commitRename() {
+    if (renamingId) renameLayer(id, renamingId, renameDraft);
+    renamingId = null;
+  }
+  function focus(el: HTMLInputElement) {
+    el.focus();
+    el.select();
+  }
+
+  let dragFrom = $state<number | null>(null);
+  let dragOver = $state<number | null>(null);
+  function onDrop() {
+    if (dragFrom != null && dragOver != null) moveLayer(id, dragFrom, dragOver);
+    dragFrom = null;
+    dragOver = null;
+  }
+
+  function toggleCrop(layerId: string) {
+    editor.cropId = editor.cropId === layerId ? null : layerId;
+  }
+  function resetCrop() {
+    if (selected && selected.type === 'image') selected.crop = undefined;
+  }
+
   const id = $derived(cardId(card));
   const free = $derived(editor.freeCards[id]);
   const layers = $derived(free?.layers ?? []);
   const selected = $derived(layers.find((l) => l.id === editor.freeLayerId) ?? null);
+  // Ensure the selected layer has a concrete opacity so the slider can bind to it.
+  $effect(() => {
+    if (selected && selected.opacity == null) selected.opacity = 1;
+  });
 
   const SUIT_LABELS: Record<Suit, string> = { pique: 'Pique', coeur: 'Cœur', carreau: 'Carreau', trefle: 'Trèfle' };
   // Tarot vocabulary in Oracle mode.
@@ -129,9 +165,14 @@
     <button class="opt" onclick={() => add(newShapeLayer('rect'))}>▭</button>
     <button class="opt" onclick={() => add(newShapeLayer('ellipse'))}>◯</button>
     <button class="opt" onclick={() => add(newShapeLayer('line'))}>╱</button>
-    <button class="opt" onclick={addRandom} disabled={randomBusy} title="Image libre au hasard (Wikimedia Commons)">
-      {randomBusy ? '🎲 …' : '🎲 Commons'}
+    <button class="opt" onclick={addRandom} disabled={randomBusy} title="Image libre au hasard depuis la source choisie">
+      {randomBusy ? '🎲 …' : '🎲 Aléatoire'}
     </button>
+  </div>
+  <div class="seg src" role="group" aria-label="Source d'images">
+    {#each IMAGE_SOURCES as s}
+      <button class:active={editor.imageSource === s.id} onclick={() => (editor.imageSource = s.id)}>{s.label}</button>
+    {/each}
   </div>
   {#if lastPick}
     <p class="credit">
@@ -162,10 +203,44 @@
 {#if layers.length}
   <section class="ctl">
     <h2>Calques</h2>
+    <p class="hint">Glisser pour réordonner · double-clic pour renommer</p>
     <ul class="layers">
-      {#each layers as l (l.id)}
-        <li class:active={editor.freeLayerId === l.id}>
-          <button class="pick" onclick={() => (editor.freeLayerId = l.id)}>{layerLabel(l)}</button>
+      {#each layers as l, i (l.id)}
+        {@const num = layers.length - i}
+        <li
+          class:active={editor.freeLayerId === l.id}
+          class:dragover={dragOver === i && dragFrom !== i}
+          draggable={renamingId !== l.id}
+          ondragstart={() => (dragFrom = i)}
+          ondragover={(e) => {
+            e.preventDefault();
+            dragOver = i;
+          }}
+          ondrop={(e) => {
+            e.preventDefault();
+            onDrop();
+          }}
+          ondragend={() => {
+            dragFrom = null;
+            dragOver = null;
+          }}
+        >
+          <span class="num" title="Calque {num}">{num}</span>
+          {#if renamingId === l.id}
+            <input
+              class="rename"
+              type="text"
+              bind:value={renameDraft}
+              onblur={commitRename}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') commitRename();
+                else if (e.key === 'Escape') renamingId = null;
+              }}
+              use:focus
+            />
+          {:else}
+            <button class="pick" onclick={() => (editor.freeLayerId = l.id)} ondblclick={() => startRename(l)}>{l.name ?? layerLabel(l)}</button>
+          {/if}
           <button class="del" title="Supprimer" aria-label="Supprimer" onclick={() => del(l.id)}>✕</button>
         </li>
       {/each}
@@ -193,18 +268,19 @@
         <label class="row">Remplissage <input type="color" bind:value={selected.fill} /></label>
       {/if}
       <label class="row">Contour <input type="color" bind:value={selected.stroke} /></label>
-      <label class="slider">Épaisseur contour <span class="val">{selected.strokeWidth}</span>
-        <input type="range" min="0" max="20" step="1" bind:value={selected.strokeWidth} />
-      </label>
+      <SliderField label="Épaisseur contour" bind:value={selected.strokeWidth} min={0} max={20} />
+    {/if}
+    {#if selected.type === 'image' && !selected.cover}
+      <div class="opts" style="margin-top:.6rem">
+        <button class="opt" class:active={editor.cropId === selected.id} onclick={() => toggleCrop(selected.id)}>✂ Rogner</button>
+        {#if selected.crop}<button class="opt" onclick={resetCrop}>Réinitialiser</button>{/if}
+      </div>
     {/if}
     {#if !(selected.type === 'image' && selected.cover)}
-      <label class="slider">Taille <span class="val">{Math.round(selected.size)}</span>
-        <input type="range" min="8" max="600" step="1" bind:value={selected.size} />
-      </label>
+      <SliderField label="Taille" bind:value={selected.size} min={8} max={600} />
     {/if}
-    <label class="slider">Rotation <span class="val">{Math.round(selected.rot)}°</span>
-      <input type="range" min="-180" max="180" step="1" bind:value={selected.rot} />
-    </label>
+    <SliderField label="Rotation" bind:value={selected.rot} min={-180} max={180} unit="°" />
+    <SliderField label="Opacité" bind:value={selected.opacity} min={0} max={1} step={0.01} />
     <div class="opts zorder">
       <button class="opt" title="Reculer" onclick={() => reorderLayer(id, selected.id, -1)}>↓ Reculer</button>
       <button class="opt" title="Avancer" onclick={() => reorderLayer(id, selected.id, 1)}>↑ Avancer</button>
@@ -328,9 +404,77 @@
     border: 1px solid var(--border);
     border-radius: 7px;
     overflow: hidden;
+    cursor: grab;
   }
   .layers li.active {
     border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .layers li.dragover {
+    border-color: var(--accent);
+    border-style: dashed;
+  }
+  .num {
+    flex: 0 0 auto;
+    min-width: 1.4rem;
+    text-align: center;
+    font-size: 0.72rem;
+    opacity: 0.6;
+    border-right: 1px solid var(--border);
+    padding: 0.35rem 0;
+  }
+  .layers li.active .num {
+    opacity: 1;
+    color: var(--accent);
+  }
+  .rename {
+    flex: 1;
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.45rem;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: var(--panel);
+    color: inherit;
+    outline: 1px solid var(--accent);
+  }
+  .hint {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    opacity: 0.6;
+  }
+  .seg.src {
+    display: flex;
+    gap: 0;
+    margin-top: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .seg.src button {
+    flex: 1;
+    font: inherit;
+    font-size: 0.78rem;
+    padding: 0.3rem 0.2rem;
+    background: transparent;
+    color: inherit;
+    border: none;
+    border-left: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .seg.src button:first-child {
+    border-left: none;
+  }
+  .seg.src button.active {
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+  }
+  .opt.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
   .pick {
     flex: 1;

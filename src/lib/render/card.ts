@@ -82,6 +82,12 @@ function placeSymbol(inner: string, cx: number, cy: number, size: number, rot: n
 }
 
 function renderLayer(layer: FreeLayer, w: number, h: number): string {
+  const inner = renderLayerBody(layer, w, h);
+  const op = layer.opacity;
+  return op != null && op < 1 ? `<g opacity="${round(op, 3)}">${inner}</g>` : inner;
+}
+
+function renderLayerBody(layer: FreeLayer, w: number, h: number): string {
   const cx = layer.x * w;
   const cy = layer.y * h;
   if (layer.type === 'suit') {
@@ -105,7 +111,15 @@ function renderLayer(layer: FreeLayer, w: number, h: number): string {
   // Cover image layer: fills the whole card (crop to fill), pinned as background.
   if (layer.cover) return renderCoverImage(layer.href, w, h, layer.rot);
   const s = layer.size;
-  return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})"><image href="${layer.href}" xlink:href="${layer.href}" x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet"/></g>`;
+  const img = `<image href="${layer.href}" xlink:href="${layer.href}" x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet"/>`;
+  // Cropped image: map the crop sub-rectangle of the source to the layer box.
+  const c = layer.crop;
+  const content =
+    c && (c.x > 0 || c.y > 0 || c.w < 1 || c.h < 1)
+      ? `<svg x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" viewBox="${round(c.x, 4)} ${round(c.y, 4)} ${round(c.w, 4)} ${round(c.h, 4)}" preserveAspectRatio="none">` +
+        `<image href="${layer.href}" xlink:href="${layer.href}" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/></svg>`
+      : img;
+  return `<g transform="translate(${round(cx)} ${round(cy)}) rotate(${layer.rot})">${content}</g>`;
 }
 
 function cornerIndex(card: Card & { suit: Suit }, opts: RenderOptions, w: number, h: number): string {

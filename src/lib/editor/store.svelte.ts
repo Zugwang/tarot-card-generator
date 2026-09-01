@@ -55,12 +55,16 @@ export const editor = $state({
   cornerCount: 2 as 0 | 2 | 4,
   /** Halo behind suits/indices for legibility over images. */
   contrastPips: false,
+  /** Selected random-image source (see IMAGE_SOURCES): 'commons' | 'openverse' | 'artic'. */
+  imageSource: 'commons' as string,
   selectedId: null as string | null,
   back: { templateId: 'quadrille', color: '#8a1f2b', suit: 'pique' as Suit },
   /** Free-mode overrides, keyed by card id. */
   freeCards: {} as Record<string, FreeCard>,
   /** Currently selected free layer id (for the properties panel). */
   freeLayerId: null as string | null,
+  /** Image layer currently being cropped (Rogner mode), or null. */
+  cropId: null as string | null,
 });
 
 /** Get (creating if needed) the free-mode override for a card. */
@@ -78,6 +82,24 @@ export function reorderLayer(cardId: string, layerId: string, dir: 1 | -1): void
   if (i < 0 || j < 0 || j >= f.layers.length) return;
   const [x] = f.layers.splice(i, 1);
   f.layers.splice(j, 0, x);
+}
+
+/** Move a free layer from one index to another (drag-and-drop reorder). */
+export function moveLayer(cardId: string, from: number, to: number): void {
+  const f = editor.freeCards[cardId];
+  if (!f) return;
+  if (from < 0 || from >= f.layers.length || to < 0 || to >= f.layers.length || from === to) return;
+  const [x] = f.layers.splice(from, 1);
+  f.layers.splice(to, 0, x);
+}
+
+/** Rename a layer (empty string clears the custom name). */
+export function renameLayer(cardId: string, layerId: string, name: string): void {
+  const l = editor.freeCards[cardId]?.layers.find((x) => x.id === layerId);
+  if (!l) return;
+  const n = name.trim();
+  if (n) l.name = n;
+  else delete l.name;
 }
 
 let clipboard: import('./free').FreeLayer | null = null;

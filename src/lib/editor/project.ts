@@ -25,6 +25,7 @@ const KEYS = [
   'indexFont',
   'cornerCount',
   'contrastPips',
+  'imageSource',
   'illustrationFit',
   'back',
   'freeCards',

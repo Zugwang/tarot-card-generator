@@ -29,7 +29,7 @@
   import { exportSvg, exportSheetSvg } from './lib/export/svg';
   import { exportZip } from './lib/export/zip';
   import { saveProject, loadProjectFromFile } from './lib/editor/project';
-  import { randomCommonsImage } from './lib/editor/wikimedia';
+  import { randomImage, IMAGE_SOURCES } from './lib/editor/sources';
   import { history, commit, undo, redo, primeHistory, isRestoring } from './lib/editor/history.svelte';
   import { newCoverLayer } from './lib/editor/free';
 
@@ -89,8 +89,12 @@
       for (const l of f.layers) {
         n += l.id.length + Math.round(l.x * 1e4) + Math.round(l.y * 1e4);
         n += Math.round(l.size * 10) + Math.round(l.rot * 10);
+        n += Math.round((l.opacity ?? 1) * 100) + (l.name?.length ?? 0);
         if (l.type === 'text') n += l.text.length;
-        if (l.type === 'image') n += l.href.length + (l.cover ? 1 : 0);
+        if (l.type === 'image') {
+          n += l.href.length + (l.cover ? 1 : 0);
+          if (l.crop) n += Math.round((l.crop.x + l.crop.y + l.crop.w + l.crop.h) * 1e3);
+        }
         if (l.type === 'suit') n += (l.color?.length ?? 0) + (l.variant?.length ?? 0);
         if (l.type === 'shape') n += l.fill.length + l.stroke.length + l.strokeWidth;
       }
@@ -150,6 +154,7 @@
         removeLayer(id, editor.freeLayerId);
       } else if (e.key === 'Escape') {
         editor.freeLayerId = null;
+        editor.cropId = null;
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && editor.freeLayerId) {
         copyLayer(id, editor.freeLayerId);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
@@ -267,14 +272,14 @@
     }
     const cards = deck;
     if (!cards.length) return;
-    if (!confirm(`Remplir les ${cards.length} ${nounP} avec des images aléatoires (Wikimedia Commons) ? Cela remplace les fonds actuels.`)) return;
+    if (!confirm(`Remplir les ${cards.length} ${nounP} avec des images aléatoires ? Cela remplace les fonds actuels.`)) return;
     fillStop = false;
     let done = 0;
     for (const card of cards) {
       if (fillStop) break;
       fillBusy = `${done + 1}/${cards.length}`;
       try {
-        const pick = await randomCommonsImage();
+        const pick = await randomImage(editor.imageSource);
         const rot = pick.width > pick.height ? 90 : 0; // détecte le sens
         // Integrated into the layer system: the Commons image is the BOTTOM layer
         // (cover-fit), and the card's enseignes/numéros are exploded as layers on
@@ -308,7 +313,7 @@
     </div>
 
     <div class="seg" role="group" aria-label="Onglet">
-      <button class:active={editor.tab === 'cartes'} onclick={() => (editor.tab = 'cartes')}>Cartes</button>
+      <button class:active={editor.tab === 'cartes'} onclick={() => (editor.tab = 'cartes')}>Packet</button>
       <button class:active={editor.tab === 'libre'} onclick={() => (editor.tab = 'libre')}>Libre</button>
     </div>
 
@@ -377,11 +382,13 @@
       <section class="ctl">
         <h2>Images aléatoires {#if fillBusy}<span class="val">{fillBusy}</span>{/if}</h2>
         <button class="opt wide" onclick={fillAllCommons}>
-          {fillBusy ? '⏹ Arrêter' : `🎲 Remplir toutes les ${nounP} (Commons)`}
+          {fillBusy ? '⏹ Arrêter' : `🎲 Remplir toutes les ${nounP}`}
         </button>
-        <p class="hint" style="text-align:left;margin:.5rem 0 0">
-          Une image libre par {noun}, orientée automatiquement et cadrée plein cadre. Depuis Wikimedia Commons.
-        </p>
+        <div class="seg src" role="group" aria-label="Source d'images">
+          {#each IMAGE_SOURCES as s}
+            <button class:active={editor.imageSource === s.id} onclick={() => (editor.imageSource = s.id)}>{s.label}</button>
+          {/each}
+        </div>
       </section>
 
       {#if editor.tab === 'cartes'}

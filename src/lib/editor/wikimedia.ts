@@ -31,7 +31,7 @@ function stripTags(s: string): string {
     .trim();
 }
 
-function blobToDataURL(b: Blob): Promise<string> {
+export function blobToDataURL(b: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
     fr.onload = () => resolve(fr.result as string);
