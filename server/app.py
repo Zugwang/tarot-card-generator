@@ -40,6 +40,10 @@ TRICK_PAUSE = 1.7
 DESERT_TIMEOUT = 15 * 60
 #: Hard ceiling on sockets: 4 seats plus a little slack for reconnect overlap.
 MAX_SOCKETS = 10
+#: A connection that never claims a seat is closed after this long. Without it,
+#: idle visitors sitting on the lobby page would occupy the ceiling above and
+#: could lock real players out of their own table.
+IDLE_TIMEOUT = 90
 #: Largest accepted frame. Our messages are tiny; this is pure abuse protection.
 MAX_MESSAGE = 4 * 1024
 
@@ -212,6 +216,14 @@ async def handler(ws: ServerConnection) -> None:
     info = {"client": None, "seat": None}
     conns[ws] = info
     LOG.info("connexion (%d ouvertes)", len(conns))
+
+    async def reap_if_idle() -> None:
+        await asyncio.sleep(IDLE_TIMEOUT)
+        if info["seat"] is None:
+            LOG.info("fermeture d'une connexion sans siege apres %ss", IDLE_TIMEOUT)
+            await ws.close(code=1000, reason="aucune place prise")
+
+    reaper = asyncio.create_task(reap_if_idle())
     try:
         async for raw in ws:
             if isinstance(raw, bytes) or len(raw) > MAX_MESSAGE:
@@ -229,6 +241,7 @@ async def handler(ws: ServerConnection) -> None:
     except ConnectionClosed:
         pass
     finally:
+        reaper.cancel()
         conns.pop(ws, None)
         if info["seat"] and info["client"]:
             still_here = any(
