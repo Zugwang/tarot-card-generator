@@ -7,6 +7,11 @@ cd "$PROJECT_DIR"
 echo "==> tests (rules + protocol)"
 python3 -m unittest discover -s server/tests -t server -q
 
+echo "==> typecheck du front"
+# belote/ n'est pas couvert par tsconfig.app.json : sans ce passage, une variable
+# inexistante passe le build et ne casse qu'a l'execution dans le navigateur.
+npx svelte-check --tsconfig ./tsconfig.belote.json --threshold error --output human-verbose 2>&1 | tail -1
+
 echo "==> front build"
 npx vite build --config vite.belote.config.ts --logLevel error
 

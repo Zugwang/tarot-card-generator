@@ -116,6 +116,10 @@ class Table:
             self.events.append({"type": "paused", "seat": seat})
         elif self.phase == LOBBY:
             st.name = None
+        # Nobody left to come back: wipe the table rather than leave four
+        # "reclaim me" chairs facing the next visitor for the whole grace period.
+        if self.online_count == 0 and self.phase != LOBBY:
+            self.reset_table()
         return seat
 
     @property

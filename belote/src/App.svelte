@@ -17,7 +17,7 @@
   let playerName = $state(localStorage.getItem('belotier.name') ?? '');
 
   const s = $derived(net.state);
-  const you = $derived(s?.you ?? link.seat ?? 'sud');
+  const you = $derived(s?.you ?? urlSeat ?? 'sud');
   const template = $derived(s?.template ?? 'marseille');
   const yourTurn = $derived(!!s && s.turn === you);
   const others = $derived(
@@ -66,8 +66,10 @@
           if (e.seat !== you) (e.action === 'prends' ? sfx.take : sfx.pass)();
           break;
         case 'contract': {
-          const g = SUIT_GLYPH[e.suit] ?? '';
-          banner(`${SEAT_LABEL[e.seat ?? e.taker] ?? e.taker} prend ${g}`, `Atout ${e.suit}`, 'gold');
+          // The server names this field `trump`, not `suit` — reading the wrong
+          // one silently produced "Atout undefined" on screen.
+          const g = SUIT_GLYPH[e.trump] ?? '';
+          banner(`${SEAT_LABEL[e.taker] ?? e.taker} prend ${g}`, `Atout ${e.trump}`, 'gold');
           shake();
           break;
         }
@@ -145,8 +147,17 @@
         {#if s.taker}<span class="pill">{SEAT_LABEL[s.taker]} preneur</span>{/if}
         {#if s.carried}<span class="pill">report {s.carried}</span>{/if}
       </div>
-      <button class="icon" onclick={() => { toggleMute(); }} aria-label={audio.muted ? 'Activer le son' : 'Couper le son'}>
-        {audio.muted ? '\u{1F507}' : '\u{1F50A}'}
+      <!-- Inline SVG, not an emoji: a headless/older font set renders the
+           speaker emoji as an empty box. -->
+      <button class="icon" onclick={() => toggleMute()} aria-label={audio.muted ? 'Activer le son' : 'Couper le son'}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+          {#if audio.muted}
+            <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+          {:else}
+            <path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+          {/if}
+        </svg>
       </button>
     </header>
 
@@ -244,13 +255,13 @@
     text-shadow: 0 2px 0 rgba(0, 0, 0, .5);
   }
   .trump.red { color: #ff7a85; }
-  .icon { padding: 9px 11px; min-height: 42px; font-size: 17px; }
+  .icon { padding: 9px 11px; min-height: 42px; display: grid; place-items: center; }
 
   .board { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; gap: 4px; }
   .row { display: flex; align-items: center; justify-content: center; }
   .middle { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; min-height: 0; }
   .side { display: flex; justify-content: center; }
-  .centre { position: relative; min-height: 190px; display: grid; place-items: center; }
+  .centre { position: relative; min-height: 150px; display: grid; place-items: center; }
   .bottom { flex-direction: column; gap: 2px; }
 
   .status {

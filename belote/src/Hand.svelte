@@ -29,7 +29,11 @@
   function geom(i: number) {
     const mid = (n - 1) / 2;
     const d = i - mid;
-    return { x: d * step, angle: d * 4.2, lift: Math.abs(d) ** 2 * 2.4 };
+    // Arc UPWARDS from the baseline: the outermost cards sit at 0 and the middle
+    // ones rise. Curving downwards instead pushed the edge cards off the bottom
+    // of a phone screen, which is exactly what happened in the first build.
+    const lift = -(mid ** 2 - d ** 2) * 2.2;
+    return { x: d * step, angle: d * 4.2, lift };
   }
 
   function pick(id: string) {
@@ -73,26 +77,29 @@
 <style>
   .hand {
     position: relative;
-    height: calc(var(--card-h) + 54px);
+    /* Room for the arc, for the 42px selection lift and for its 1.14 scale. */
+    height: calc(var(--card-h) + 104px);
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding-bottom: 6px;
   }
   .slot {
     position: absolute;
-    bottom: 6px;
+    /* The fan rotates about a point below the card, so the outer cards swing
+       their bottom corner down; this clears it. */
+    bottom: 18px;
     transition: transform .3s var(--spring);
   }
   .hint {
     position: absolute;
-    bottom: -2px;
+    top: 0;
     left: 50%;
     translate: -50% 0;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: .08em;
     text-transform: uppercase;
+    white-space: nowrap;
     color: var(--gold);
     text-shadow: 0 2px 6px rgba(0, 0, 0, .8);
     animation: blink 1.4s ease-in-out infinite;

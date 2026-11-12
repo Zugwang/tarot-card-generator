@@ -221,17 +221,29 @@ server/.venv/bin/python -u server/tests/cli_game.py      # partie complète à 4
 ./belote/gen-cards.sh                                    # re-rendre les cartes (lent)
 ./deploy/deploy-belotier.sh                              # tests + build + mise en ligne
 ./deploy/check-belotier.sh                               # santé + chasse aux process fantômes
-./deploy/links-belotier.sh                               # afficher les 4 liens de place
+./belote/ui-check.sh                                     # vérification en navigateur réel
 ```
+
+**Vérifier dans un vrai navigateur.** La box n'a pas d'interface graphique, mais un
+Chromium headless y est installé (`~/.cache/ms-playwright`, ~900 Mo). `belote/ui-check.sh`
+ouvre quatre fenêtres mobiles, prend les quatre places, joue une donne et capture des
+écrans dans `/tmp/belotier-shots`, en signalant erreurs console, requêtes échouées et
+tout « undefined » affiché. **C'est le seul contrôle qui voit ce que voit un joueur** :
+il a déjà attrapé un plantage au rendu, un champ d'événement erroné et un éventail de
+cartes rogné hors de l'écran — trois bugs invisibles pour le typage et les tests.
+Deux pièges du harnais : les cartes ont une animation de flottement infinie, donc
+Playwright ne les juge jamais « stables » (utiliser `force: true`), et le dossier
+`belote/` n'est **pas** couvert par `tsconfig.app.json` — d'où `tsconfig.belote.json`,
+désormais lancé par le script de déploiement.
 
 **Pièges spécifiques :**
 
-- **Les clés de siège changent à chaque redémarrage** du service (elles sont en RAM).
-  Après un déploiement, les anciens liens ne valent plus rien : relance
-  `links-belotier.sh`.
-- **Les liens ne sont pas publics par défaut** (`BELOTIER_LINKS=0`). Les publier sur
-  le salon (`=1`) laisse n'importe quel visiteur s'asseoir — c'est déjà arrivé en
-  test. Le lien **est** l'identité, donc le lien **est** le contrôle d'accès.
+- **La table n'a pas de propriétaire** : pas de clé, pas d'invitation. Le salon montre
+  l'occupation en direct et on clique une place libre ; `/s/<siège>` ne sert qu'à
+  retrouver sa chaise au rechargement. Une première version utilisait des liens à clé,
+  ce qui faisait du premier arrivé le détenteur de la table — n'y reviens pas.
+- **La table se vide d'elle-même quand le dernier joueur part**, sinon un nouveau
+  visiteur tombe sur quatre chaises « reprendre X » pendant tout le délai de grâce.
 - **Le balayage du pli est réarmé dans `push()`**, pas aux points d'appel. Un joueur
   qui se déconnecte pendant l'affichage du pli annule le balayage ; sans ce
   réarmement centralisé la table reste bloquée à vie en `trick_done`.
