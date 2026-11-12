@@ -2,9 +2,8 @@
 // actually needs: backgrounding a tab kills the socket, so we reconnect on
 // visibilitychange and on `online`, with a capped exponential backoff.
 //
-// The seat link IS the identity: the seat comes from the path (/s/nord) and the
-// key from the URL fragment, which browsers never send to the server, so the key
-// stays out of the nginx access log.
+// The table has no owner and no access key: /s/<seat> simply remembers which
+// chair you took, so reloading (or a phone waking up) puts you back in it.
 
 import { sfx } from './sfx.svelte';
 
@@ -61,11 +60,10 @@ function clientId(): string {
   return id;
 }
 
-/** Parse /s/<seat>#k=<key> out of the address bar. */
-export function readSeatLink(): { seat: string | null; key: string } {
+/** Which chair the address bar says we are in, if any. */
+export function readSeat(): string | null {
   const m = location.pathname.match(/\/s\/(nord|est|sud|ouest)\/?$/);
-  const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
-  return { seat: m ? m[1] : null, key: hash.get('k') ?? '' };
+  return m ? m[1] : null;
 }
 
 function wsUrl(): string {
@@ -78,7 +76,6 @@ export const net = $state({
   state: null as GameState | null,
   error: null as string | null,
   seatBusy: false,
-  links: null as Record<string, string> | null,
   attempts: 0,
 });
 
@@ -91,7 +88,6 @@ export function onEvent(fn: Listener): void {
 let ws: WebSocket | null = null;
 let retry: number | undefined;
 let seat: string | null = null;
-let key = '';
 let name: string | null = null;
 let takeover = false;
 let closedByUs = false;
@@ -116,10 +112,8 @@ export function connect(): void {
     net.attempts = 0;
     net.error = null;
     if (seat) {
-      send({ t: 'hello', seat, key, client: clientId(), name, takeover });
+      send({ t: 'hello', seat, client: clientId(), name, takeover });
       takeover = false;
-    } else {
-      send({ t: 'links' });
     }
   };
 
@@ -136,8 +130,6 @@ export function connect(): void {
       for (const e of msg.events ?? []) {
         for (const fn of listeners) fn(e);
       }
-    } else if (msg.t === 'links') {
-      net.links = msg.links;
     } else if (msg.t === 'welcome') {
       net.error = null;
       net.seatBusy = false;
@@ -170,17 +162,26 @@ export function send(msg: Record<string, unknown>): void {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
 }
 
-export function joinSeat(s: string, k: string, playerName: string | null, force = false): void {
+export function joinSeat(s: string, playerName: string | null, force = false): void {
   seat = s;
-  key = k;
   name = playerName;
   takeover = force;
+  if (location.pathname !== `/s/${s}`) history.pushState({}, '', `/s/${s}`);
   if (ws?.readyState === WebSocket.OPEN) {
-    send({ t: 'hello', seat, key, client: clientId(), name, takeover });
+    send({ t: 'hello', seat, client: clientId(), name, takeover });
     takeover = false;
   } else {
     connect();
   }
+}
+
+/** Stand up and go back to the lobby. */
+export function leaveSeat(): void {
+  seat = null;
+  history.pushState({}, '', '/');
+  ws?.close();
+  net.state = null;
+  connect();
 }
 
 /** A phone kills the socket the moment the tab goes to the background. */

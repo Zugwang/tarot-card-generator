@@ -15,7 +15,6 @@ Design notes
 from __future__ import annotations
 
 import random
-import secrets
 from dataclasses import dataclass, field
 
 from rules.bidding import Bidding
@@ -43,7 +42,6 @@ class SeatBusy(Exception):
 
 @dataclass(slots=True)
 class SeatState:
-    key: str
     name: str | None = None
     client: str | None = None
     online: bool = False
@@ -68,7 +66,7 @@ class Table:
         self.template = template
         self.variants = variants
         self.scoring = scoring
-        self.seats: dict[str, SeatState] = {s: SeatState(key=secrets.token_urlsafe(9)) for s in SEATS}
+        self.seats: dict[str, SeatState] = {s: SeatState() for s in SEATS}
         self.scores: dict[str, int] = {"ns": 0, "eo": 0}
         self.carried = 0
         self.dealer = "nord"
@@ -82,21 +80,15 @@ class Table:
 
     # ---- seats ------------------------------------------------------------
 
-    @property
-    def links(self) -> dict[str, str]:
-        """Per-seat join keys. The 4 links are the only way in, so there can
-        never be a 5th player; a stranger cannot guess a seat either."""
-        return {s: st.key for s, st in self.seats.items()}
-
     def seat_of_client(self, client: str) -> str | None:
         return next((s for s, st in self.seats.items() if st.client == client), None)
 
-    def claim(self, seat: str, key: str, client: str, name: str | None, takeover: bool = False) -> None:
+    def claim(self, seat: str, client: str, name: str | None, takeover: bool = False) -> None:
+        """Sit down. The table has no owner: any of the four seats is free to
+        whoever asks for it first, and only a live occupant blocks a seat."""
         if seat not in self.seats:
             raise ValueError("siège inconnu")
         st = self.seats[seat]
-        if not secrets.compare_digest(key or "", st.key):
-            raise ValueError("lien invalide")
         if st.online and st.client != client and not takeover:
             raise SeatBusy(seat)
         reclaimed = st.client == client

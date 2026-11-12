@@ -62,8 +62,8 @@ def hands_of_others(seat: str) -> set[str]:
 
 
 class Client:
-    def __init__(self, seat: str, key: str) -> None:
-        self.seat, self.key = seat, key
+    def __init__(self, seat: str) -> None:
+        self.seat = seat
         self.ws = None
         self.state: dict = {}
         self.errors: list[dict] = []
@@ -76,7 +76,7 @@ class Client:
         self.first_hand = None
         self.ws = await connect(f"ws://{HOST}:{PORT}/", max_size=2**16)
         await self.ws.send(json.dumps({
-            "t": "hello", "seat": self.seat, "key": self.key,
+            "t": "hello", "seat": self.seat,
             "client": f"cli-{self.seat}", "name": self.seat.capitalize(),
             "takeover": True,
         }))
@@ -154,20 +154,29 @@ async def run() -> None:
     )
     async with serve(app.handler, HOST, PORT, **opts):
         t = app.table
-        clients = [Client(s, t.links[s]) for s in SEATS]
+        clients = [Client(s) for s in SEATS]
 
-        # --- an intruder, before the table fills up ----------------------
+        # --- bad input, before the table fills up ------------------------
         async with connect(f"ws://{HOST}:{PORT}/") as spare:
-            await spare.send(json.dumps({"t": "hello", "seat": "nord", "key": "wrong", "client": "intrus"}))
+            await asyncio.wait_for(spare.recv(), timeout=3)   # the opening state frame
+            await spare.send(json.dumps({"t": "hello", "seat": "milieu", "client": "intrus"}))
             r1 = json.loads(await asyncio.wait_for(spare.recv(), timeout=3))
-            check(r1.get("code") == "bad_seat", "un lien invalide est refuse")
+            check(r1.get("code") == "bad_seat", "un siege inexistant est refuse")
             await spare.send(json.dumps({"t": "play", "card": "pip-coeur-1"}))
             r2 = json.loads(await asyncio.wait_for(spare.recv(), timeout=3))
-            check(r2.get("code") == "not_seated", "un intrus non assis ne peut pas jouer")
+            check(r2.get("code") == "not_seated", "on ne peut pas jouer sans s'asseoir")
 
         for c in clients:
             await c.open()
         await asyncio.sleep(0.3)
+
+        # --- a live occupant still blocks the chair ----------------------
+        async with connect(f"ws://{HOST}:{PORT}/") as squat:
+            await asyncio.wait_for(squat.recv(), timeout=3)
+            await squat.send(json.dumps({"t": "hello", "seat": "nord", "client": "squatteur"}))
+            r = json.loads(await asyncio.wait_for(squat.recv(), timeout=3))
+            check(r.get("code") == "seat_busy", "un siege deja occupe en direct est protege")
+
         check(t.phase == "bidding", f"la partie demarre seule a 4 joueurs (phase={t.phase})")
         for c in clients:
             c.start()

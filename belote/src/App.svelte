@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { connect, joinSeat, net, onEvent, readSeatLink, send, watchLifecycle } from './net.svelte';
+  import { connect, joinSeat, leaveSeat, net, onEvent, readSeat, send, watchLifecycle } from './net.svelte';
   import { audio, sfx, toggleMute, unlock } from './sfx.svelte';
   import { banner, confetti, floatText, fx, shake } from './fx.svelte';
   import { SEAT_LABEL, SUIT_GLYPH, SUIT_IS_RED, TEAM_LABEL, relative } from './cards';
@@ -12,8 +12,8 @@
   import Seat from './Seat.svelte';
   import Trick from './Trick.svelte';
 
-  const link = readSeatLink();
-  let joined = $state(false);
+  const urlSeat = readSeat();
+  let joined = $state(!!urlSeat);
   let playerName = $state(localStorage.getItem('belotier.name') ?? '');
 
   const s = $derived(net.state);
@@ -26,17 +26,15 @@
       .map((x) => ({ seat: x, where: relative(you, x) as 'left' | 'top' | 'right' })),
   );
 
-  function join() {
-    unlock();                       // audio needs a real gesture; this is it
-    sfx.join();
+  /** Take a chair from the lobby. No key, no owner: first come, first served. */
+  function sit(seat: string, takeover = false) {
     localStorage.setItem('belotier.name', playerName);
     joined = true;
-    joinSeat(link.seat!, link.key, playerName || null);
+    joinSeat(seat, playerName || null, takeover);
   }
   function retake() {
     unlock();
-    joined = true;
-    joinSeat(link.seat!, link.key, playerName || null, true);
+    sit(net.state?.you ?? urlSeat ?? 'nord', true);
   }
 
   function play(card: string) {
@@ -53,7 +51,10 @@
 
   onMount(() => {
     watchLifecycle();
-    if (!link.seat) connect();      // lobby: just fetch the seat links
+    // A reload (or a phone waking up) on /s/<seat> puts you straight back in
+    // your chair; otherwise we just watch the lobby.
+    if (urlSeat) joinSeat(urlSeat, playerName || null);
+    else connect();
 
     onEvent((e) => {
       switch (e.type) {
@@ -116,30 +117,14 @@
 <svelte:window onpointerdown={unlock} />
 
 <div class="root" class:shake={fx.shaking}>
-  {#if !link.seat}
-    <Lobby />
-  {:else if !joined}
-    <!-- Joining is also the gesture that unlocks audio on mobile. -->
-    <div class="gate">
-      <h1>Belotier</h1>
-      <p class="seatname" style="--c: var(--{link.seat === 'nord' || link.seat === 'sud' ? 'ns' : 'eo'})">
-        Place : <b>{SEAT_LABEL[link.seat]}</b>
-        <span>équipe {link.seat === 'nord' || link.seat === 'sud' ? 'Nord-Sud' : 'Est-Ouest'}</span>
-      </p>
-      <input
-        bind:value={playerName}
-        placeholder="Ton prénom (facultatif)"
-        maxlength="18"
-        onkeydown={(e) => e.key === 'Enter' && join()}
-      />
-      <button class="primary big" onclick={join}>Rejoindre la table</button>
-      {#if !link.key}<p class="warn">Ce lien n'a pas de clé : demande le bon lien.</p>{/if}
-    </div>
+  {#if !joined}
+    <Lobby bind:name={playerName} onsit={sit} />
   {:else if net.seatBusy}
     <div class="gate">
       <h1>Place occupée</h1>
-      <p class="lede">Quelqu'un occupe déjà {SEAT_LABEL[link.seat]}. Si c'est toi sur un autre appareil, reprends la place.</p>
+      <p class="lede">Quelqu'un est déjà assis là. Si c'est toi sur un autre appareil, reprends la place.</p>
       <button class="primary big" onclick={retake}>Reprendre la place</button>
+      <button onclick={() => { joined = false; leaveSeat(); }}>Choisir une autre place</button>
     </div>
   {:else if !s}
     <div class="gate"><h1>Connexion…</h1></div>
@@ -282,18 +267,8 @@
     align-items: center; justify-content: center; text-align: center; padding: 20px;
   }
   .gate h1 { font-size: clamp(32px, 11vw, 52px); margin: 0; color: var(--gold); letter-spacing: -.03em; }
-  .seatname { margin: 0; color: var(--ink-dim); }
-  .seatname b { color: var(--ink); font-size: 21px; display: block; }
-  .seatname span { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--c); }
   .lede { color: var(--ink-dim); max-width: 34ch; line-height: 1.5; }
-  input {
-    font: inherit; font-weight: 700; text-align: center;
-    padding: 13px 16px; min-height: 48px; width: min(300px, 90%);
-    border-radius: 12px; border: 2px solid rgba(255, 255, 255, .2);
-    background: rgba(0, 0, 0, .3); color: var(--ink);
-  }
   .big { font-size: 17px; padding: 15px 28px; }
-  .warn { color: #e8b26b; font-size: 13px; }
 
   .net, .toast {
     position: fixed; left: 50%; translate: -50% 0; z-index: 85;

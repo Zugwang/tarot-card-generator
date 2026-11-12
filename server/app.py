@@ -9,9 +9,8 @@ BELOTIER_SOCKET   unix socket path (default /run/belotier/ws.sock)
 BELOTIER_HOST     set (with _PORT) to listen on TCP instead — dev only
 BELOTIER_PORT
 BELOTIER_TARGET   points to win a game (default 501)
-BELOTIER_LINKS    "0" (default) keeps the 4 seat links private — read them with
-                  deploy/links-belotier.sh. Set "1" to publish them on the lobby
-                  page, which lets ANY visitor take a seat.
+
+The table has no owner: anyone who opens the page may take any free seat.
 """
 
 from __future__ import annotations
@@ -38,17 +37,16 @@ LOG = logging.getLogger("belotier")
 TRICK_PAUSE = 1.7
 #: A paused table is wiped if nobody comes back within this many seconds.
 DESERT_TIMEOUT = 15 * 60
-#: Hard ceiling on sockets: 4 seats plus a little slack for reconnect overlap.
-MAX_SOCKETS = 10
-#: A connection that never claims a seat is closed after this long. Without it,
-#: idle visitors sitting on the lobby page would occupy the ceiling above and
-#: could lock real players out of their own table.
-IDLE_TIMEOUT = 90
+#: Hard ceiling on sockets. Four players, plus reconnect overlap, plus people
+#: watching the lobby waiting for a seat to free up.
+MAX_SOCKETS = 24
+#: A connection that never takes a seat is closed after this long, so an
+#: abandoned lobby tab cannot hold a slot for ever.
+IDLE_TIMEOUT = 20 * 60
 #: Largest accepted frame. Our messages are tiny; this is pure abuse protection.
 MAX_MESSAGE = 4 * 1024
 
 TARGET = int(os.environ.get("BELOTIER_TARGET", "501"))
-PUBLIC_LINKS = os.environ.get("BELOTIER_LINKS", "0") == "1"
 
 table = Table(target=TARGET)
 #: ws -> {"client": str, "seat": str | None}
@@ -145,25 +143,14 @@ def cancel_desert_check() -> None:
 async def handle_message(ws: ServerConnection, info: dict, msg: dict) -> None:
     kind = msg.get("t")
 
-    if kind == "links":
-        if not PUBLIC_LINKS:
-            await send(ws, {
-                "t": "error", "code": "links_private",
-                "message": "Les liens de place ne sont pas publics. Demande-les au proprietaire de la table.",
-            })
-            return
-        await send(ws, {"t": "links", "links": table.links, "seats": list(SEATS)})
-        return
-
     if kind == "hello":
         seat = msg.get("seat")
-        key = msg.get("key") or ""
         client = str(msg.get("client") or "")[:64]
         if not client:
             await send(ws, {"t": "error", "code": "no_client", "message": "Identifiant client manquant."})
             return
         try:
-            table.claim(seat, key, client, msg.get("name"), takeover=bool(msg.get("takeover")))
+            table.claim(seat, client, msg.get("name"), takeover=bool(msg.get("takeover")))
         except SeatBusy:
             await send(ws, {"t": "error", "code": "seat_busy", "message": "Ce siège est déjà occupé.", "seat": seat})
             return
@@ -224,6 +211,9 @@ async def handler(ws: ServerConnection) -> None:
             await ws.close(code=1000, reason="aucune place prise")
 
     reaper = asyncio.create_task(reap_if_idle())
+    # Send the public state straight away so the lobby can show who is seated
+    # before anyone says hello.
+    await send(ws, {"t": "state", "state": table.state_for(None)})
     try:
         async for raw in ws:
             if isinstance(raw, bytes) or len(raw) > MAX_MESSAGE:
@@ -272,8 +262,6 @@ async def main() -> None:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", stream=sys.stdout
     )
-    LOG.info("liens des sièges : %s", json.dumps(table.links))
-
     loop = asyncio.get_running_loop()
     stop = loop.create_future()
     for sig in (signal.SIGINT, signal.SIGTERM):
