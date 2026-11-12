@@ -4,7 +4,7 @@ Statut au 2026-08-22.
 
 ## Fait
 
-- [x] Déploiement statique nginx + TLS (tarotier.space-dice.com)
+- [x] Déploiement statique nginx + TLS (tarotier.e1000.dev)
 - [x] Modèle de deck 32/40/52/56/78 + moteur de pips SVG
 - [x] Coquille éditeur : 2 modes de visu (mosaïque / bandeau), sélection
 - [x] Variantes d'enseignes (3 chacune) + sélecteur

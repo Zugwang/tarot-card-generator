@@ -1,0 +1,102 @@
+/* Belotier — chunky, saturated, high-contrast. Mobile portrait first.
+   Motion is deliberately springy and overshooting rather than linear. */
+
+:root {
+  --felt-0: #0a2019;
+  --felt-1: #0d2b22;
+  --felt-2: #12382c;
+  --ink: #f6f1e2;
+  --ink-dim: #a9b8ad;
+  --gold: #f0b52e;
+  --gold-deep: #c98d12;
+  --red: #e0414f;
+  --blue: #3d82e0;
+  --ns: #3d82e0;
+  --eo: #e0414f;
+  --shadow: 0 6px 0 rgba(0, 0, 0, .35), 0 10px 22px rgba(0, 0, 0, .45);
+  --shadow-lift: 0 14px 0 rgba(0, 0, 0, .3), 0 22px 40px rgba(0, 0, 0, .55);
+  --radius: 14px;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --snap: cubic-bezier(.2, .9, .3, 1.4);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  /* Card geometry, driven from JS so the fan maths stays in one place. */
+  --card-w: 86px;
+  --card-h: 120px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background:
+    radial-gradient(130% 90% at 50% 8%, var(--felt-2) 0%, var(--felt-1) 45%, var(--felt-0) 100%);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+#app {
+  min-height: 100dvh;
+  padding:
+    calc(env(safe-area-inset-top) + 6px)
+    calc(env(safe-area-inset-right) + 8px)
+    calc(env(safe-area-inset-bottom) + 6px)
+    calc(env(safe-area-inset-left) + 8px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The whole board shakes on big moments; the class is toggled from JS. */
+.shake { animation: shake .42s cubic-bezier(.36, .07, .19, .97); }
+@keyframes shake {
+  10%, 90% { transform: translate(-2px, 1px) rotate(-.3deg); }
+  20%, 80% { transform: translate(4px, -2px) rotate(.4deg); }
+  30%, 50%, 70% { transform: translate(-7px, 2px) rotate(-.6deg); }
+  40%, 60% { transform: translate(7px, -1px) rotate(.6deg); }
+}
+
+button {
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: var(--ink);
+  background: linear-gradient(#1b4b3a, #0f3328);
+  border: 2px solid rgba(255, 255, 255, .18);
+  border-radius: 12px;
+  padding: 12px 18px;
+  min-height: 48px;           /* comfortable touch target */
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .45);
+  cursor: pointer;
+  transition: transform .12s var(--snap), box-shadow .12s ease, filter .12s ease;
+}
+button:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 rgba(0, 0, 0, .45); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button.primary {
+  background: linear-gradient(#f3c14a, var(--gold-deep));
+  color: #2a1c02;
+  border-color: rgba(255, 255, 255, .5);
+}
+button.danger { background: linear-gradient(#e0414f, #9c2330); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 999px;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid rgba(255, 255, 255, .14);
+  font-size: 13px; font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

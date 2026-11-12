@@ -1,0 +1,44 @@
+[Unit]
+Description=Belotier — belote game server (websockets)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=belotier
+Group=belotier
+RuntimeDirectory=belotier
+WorkingDirectory=/opt/belotier/server
+Environment=PYTHONUNBUFFERED=1
+Environment=BELOTIER_SOCKET=/run/belotier/ws.sock
+Environment=BELOTIER_TARGET=501
+ExecStart=/opt/belotier/venv/bin/python /opt/belotier/server/app.py
+
+# Hardening
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+NoNewPrivileges=true
+ReadWritePaths=/run/belotier
+
+# Resource caps. Deliberately tight: this box is RAM-bound and earlyoom is
+# configured with --prefer python3, so a bloated process would be killed first.
+# One asyncio process holding one table needs ~30 MB.
+CPUQuota=40%
+MemoryHigh=64M
+MemoryMax=96M
+TasksMax=16
+
+# No child processes are ever spawned; mixed kill mode guarantees no orphan
+# survives a restart.
+KillMode=mixed
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

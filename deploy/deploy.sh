@@ -17,4 +17,4 @@ npm run build
 echo "==> Syncing dist/ -> $DOCROOT"
 rsync -a --delete "$PROJECT_DIR/dist/" "$DOCROOT/"
 
-echo "==> Done. Live at https://tarotier.space-dice.com"
+echo "==> Done. Live at https://tarotier.e1000.dev"

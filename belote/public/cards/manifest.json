@@ -1,0 +1,336 @@
+{
+  "width": 250,
+  "height": 350,
+  "templates": {
+    "marseille": {
+      "label": "Marseille",
+      "cards": [
+        {
+          "id": "pip-pique-1",
+          "label": "A",
+          "name": "As de Pique"
+        },
+        {
+          "id": "pip-pique-7",
+          "label": "7",
+          "name": "Sept de Pique"
+        },
+        {
+          "id": "pip-pique-8",
+          "label": "8",
+          "name": "Huit de Pique"
+        },
+        {
+          "id": "pip-pique-9",
+          "label": "9",
+          "name": "Neuf de Pique"
+        },
+        {
+          "id": "pip-pique-10",
+          "label": "10",
+          "name": "Dix de Pique"
+        },
+        {
+          "id": "court-pique-valet",
+          "label": "V",
+          "name": "Valet de Pique"
+        },
+        {
+          "id": "court-pique-dame",
+          "label": "D",
+          "name": "Dame de Pique"
+        },
+        {
+          "id": "court-pique-roi",
+          "label": "R",
+          "name": "Roi de Pique"
+        },
+        {
+          "id": "pip-coeur-1",
+          "label": "A",
+          "name": "As de Cœur"
+        },
+        {
+          "id": "pip-coeur-7",
+          "label": "7",
+          "name": "Sept de Cœur"
+        },
+        {
+          "id": "pip-coeur-8",
+          "label": "8",
+          "name": "Huit de Cœur"
+        },
+        {
+          "id": "pip-coeur-9",
+          "label": "9",
+          "name": "Neuf de Cœur"
+        },
+        {
+          "id": "pip-coeur-10",
+          "label": "10",
+          "name": "Dix de Cœur"
+        },
+        {
+          "id": "court-coeur-valet",
+          "label": "V",
+          "name": "Valet de Cœur"
+        },
+        {
+          "id": "court-coeur-dame",
+          "label": "D",
+          "name": "Dame de Cœur"
+        },
+        {
+          "id": "court-coeur-roi",
+          "label": "R",
+          "name": "Roi de Cœur"
+        },
+        {
+          "id": "pip-carreau-1",
+          "label": "A",
+          "name": "As de Carreau"
+        },
+        {
+          "id": "pip-carreau-7",
+          "label": "7",
+          "name": "Sept de Carreau"
+        },
+        {
+          "id": "pip-carreau-8",
+          "label": "8",
+          "name": "Huit de Carreau"
+        },
+        {
+          "id": "pip-carreau-9",
+          "label": "9",
+          "name": "Neuf de Carreau"
+        },
+        {
+          "id": "pip-carreau-10",
+          "label": "10",
+          "name": "Dix de Carreau"
+        },
+        {
+          "id": "court-carreau-valet",
+          "label": "V",
+          "name": "Valet de Carreau"
+        },
+        {
+          "id": "court-carreau-dame",
+          "label": "D",
+          "name": "Dame de Carreau"
+        },
+        {
+          "id": "court-carreau-roi",
+          "label": "R",
+          "name": "Roi de Carreau"
+        },
+        {
+          "id": "pip-trefle-1",
+          "label": "A",
+          "name": "As de Trèfle"
+        },
+        {
+          "id": "pip-trefle-7",
+          "label": "7",
+          "name": "Sept de Trèfle"
+        },
+        {
+          "id": "pip-trefle-8",
+          "label": "8",
+          "name": "Huit de Trèfle"
+        },
+        {
+          "id": "pip-trefle-9",
+          "label": "9",
+          "name": "Neuf de Trèfle"
+        },
+        {
+          "id": "pip-trefle-10",
+          "label": "10",
+          "name": "Dix de Trèfle"
+        },
+        {
+          "id": "court-trefle-valet",
+          "label": "V",
+          "name": "Valet de Trèfle"
+        },
+        {
+          "id": "court-trefle-dame",
+          "label": "D",
+          "name": "Dame de Trèfle"
+        },
+        {
+          "id": "court-trefle-roi",
+          "label": "R",
+          "name": "Roi de Trèfle"
+        }
+      ]
+    },
+    "danois": {
+      "label": "Portrait danois",
+      "cards": [
+        {
+          "id": "pip-pique-1",
+          "label": "A",
+          "name": "As de Pique"
+        },
+        {
+          "id": "pip-pique-7",
+          "label": "7",
+          "name": "Sept de Pique"
+        },
+        {
+          "id": "pip-pique-8",
+          "label": "8",
+          "name": "Huit de Pique"
+        },
+        {
+          "id": "pip-pique-9",
+          "label": "9",
+          "name": "Neuf de Pique"
+        },
+        {
+          "id": "pip-pique-10",
+          "label": "10",
+          "name": "Dix de Pique"
+        },
+        {
+          "id": "court-pique-valet",
+          "label": "V",
+          "name": "Valet de Pique"
+        },
+        {
+          "id": "court-pique-dame",
+          "label": "D",
+          "name": "Dame de Pique"
+        },
+        {
+          "id": "court-pique-roi",
+          "label": "R",
+          "name": "Roi de Pique"
+        },
+        {
+          "id": "pip-coeur-1",
+          "label": "A",
+          "name": "As de Cœur"
+        },
+        {
+          "id": "pip-coeur-7",
+          "label": "7",
+          "name": "Sept de Cœur"
+        },
+        {
+          "id": "pip-coeur-8",
+          "label": "8",
+          "name": "Huit de Cœur"
+        },
+        {
+          "id": "pip-coeur-9",
+          "label": "9",
+          "name": "Neuf de Cœur"
+        },
+        {
+          "id": "pip-coeur-10",
+          "label": "10",
+          "name": "Dix de Cœur"
+        },
+        {
+          "id": "court-coeur-valet",
+          "label": "V",
+          "name": "Valet de Cœur"
+        },
+        {
+          "id": "court-coeur-dame",
+          "label": "D",
+          "name": "Dame de Cœur"
+        },
+        {
+          "id": "court-coeur-roi",
+          "label": "R",
+          "name": "Roi de Cœur"
+        },
+        {
+          "id": "pip-carreau-1",
+          "label": "A",
+          "name": "As de Carreau"
+        },
+        {
+          "id": "pip-carreau-7",
+          "label": "7",
+          "name": "Sept de Carreau"
+        },
+        {
+          "id": "pip-carreau-8",
+          "label": "8",
+          "name": "Huit de Carreau"
+        },
+        {
+          "id": "pip-carreau-9",
+          "label": "9",
+          "name": "Neuf de Carreau"
+        },
+        {
+          "id": "pip-carreau-10",
+          "label": "10",
+          "name": "Dix de Carreau"
+        },
+        {
+          "id": "court-carreau-valet",
+          "label": "V",
+          "name": "Valet de Carreau"
+        },
+        {
+          "id": "court-carreau-dame",
+          "label": "D",
+          "name": "Dame de Carreau"
+        },
+        {
+          "id": "court-carreau-roi",
+          "label": "R",
+          "name": "Roi de Carreau"
+        },
+        {
+          "id": "pip-trefle-1",
+          "label": "A",
+          "name": "As de Trèfle"
+        },
+        {
+          "id": "pip-trefle-7",
+          "label": "7",
+          "name": "Sept de Trèfle"
+        },
+        {
+          "id": "pip-trefle-8",
+          "label": "8",
+          "name": "Huit de Trèfle"
+        },
+        {
+          "id": "pip-trefle-9",
+          "label": "9",
+          "name": "Neuf de Trèfle"
+        },
+        {
+          "id": "pip-trefle-10",
+          "label": "10",
+          "name": "Dix de Trèfle"
+        },
+        {
+          "id": "court-trefle-valet",
+          "label": "V",
+          "name": "Valet de Trèfle"
+        },
+        {
+          "id": "court-trefle-dame",
+          "label": "D",
+          "name": "Dame de Trèfle"
+        },
+        {
+          "id": "court-trefle-roi",
+          "label": "R",
+          "name": "Roi de Trèfle"
+        }
+      ]
+    }
+  }
+}

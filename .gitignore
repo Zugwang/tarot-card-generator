@@ -26,3 +26,8 @@ public/art/atouts-oracle/
 public/art/tarot/syssk/
 *.zip
 *.pdf
+
+# belotier
+dist-belote/
+server/.venv/
+server/**/__pycache__/

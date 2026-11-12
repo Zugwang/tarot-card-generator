@@ -1,7 +1,7 @@
 Brief technique — évolution de Tarotier
 
 Tu travailles sur Tarotier, une application web de création de jeux de cartes :
-https://tarotier.space-dice.com/
+https://tarotier.e1000.dev/
 Dépôt GitHub actuel : https://github.com/Zugwang/tarot-card-generator
 Objectif
 
