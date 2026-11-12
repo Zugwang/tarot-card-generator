@@ -12,7 +12,14 @@
     "skipLibCheck": true,
     "noEmit": true,
     "strict": true,
-    "types": ["vite/client"]
+    "types": [
+      "vite/client"
+    ]
   },
-  "include": ["belote/src/**/*.ts", "belote/src/**/*.svelte"]
+  "include": [
+    "belote/src/**/*.ts",
+    "belote/src/**/*.svelte",
+    "belote/template/**/*.ts",
+    "belote/template/**/*.svelte"
+  ]
 }

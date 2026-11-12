@@ -12,6 +12,11 @@ echo "==> typecheck du front"
 # inexistante passe le build et ne casse qu'a l'execution dans le navigateur.
 npx svelte-check --tsconfig ./tsconfig.belote.json --threshold error --output human-verbose 2>&1 | tail -1
 
+echo "==> jetons CSS"
+# Un var(--token) inconnu est ignore EN SILENCE par le navigateur : ni tsc ni
+# svelte-check ne le voient, et le resultat est du texte couleur de son fond.
+./belote/check-tokens.sh
+
 echo "==> front build"
 npx vite build --config vite.belote.config.ts --logLevel error
 

@@ -9,15 +9,16 @@
     you: string;
     template: string;
     winner: string | null;
+    trump?: string | null;
   }
-  let { trick, you, template, winner }: Props = $props();
+  let { trick, you, template, winner, trump = null }: Props = $props();
   const sweepTo = $derived(winner ? relative(you, winner) : null);
 </script>
 
 <div class="trick" class:sweeping={!!sweepTo} data-to={sweepTo}>
   {#each trick as p (p.seat)}
     <div class="pos {relative(you, p.seat)}">
-      <Card {template} id={p.card} flying />
+      <Card {template} id={p.card} {trump} flying />
     </div>
   {/each}
 </div>

@@ -9,9 +9,10 @@
     playable: string[];
     template: string;
     yourTurn: boolean;
+    trump?: string | null;
     onplay: (id: string) => void;
   }
-  let { cards, playable, template, yourTurn, onplay }: Props = $props();
+  let { cards, playable, template, yourTurn, trump = null, onplay }: Props = $props();
 
   let width = $state(340);
   let selected = $state<string | null>(null);
@@ -58,6 +59,7 @@
       <Card
         {template}
         {id}
+        {trump}
         angle={g.angle}
         lift={g.lift}
         idle={i * 0.18}
@@ -95,9 +97,10 @@
     top: 0;
     left: 50%;
     translate: -50% 0;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .08em;
+    font-family: var(--font-roman);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .16em;
     text-transform: uppercase;
     white-space: nowrap;
     color: var(--gold);

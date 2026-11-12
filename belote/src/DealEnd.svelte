@@ -59,9 +59,9 @@
       {#each ['ns', 'eo'] as t}
         <div class="team" class:mine={t === yourTeam} style="--c: var(--{t})">
           <div class="nm">{TEAM_LABEL[t]}{#if t === score.takerTeam}<i>preneur</i>{/if}</div>
-          <div class="pts">{score.cardPoints[t]}<small> pts</small></div>
-          <div class="gain">+{shown[t]}</div>
-          <div class="tot">{scores[t]} / {target}</div>
+          <div class="pts num">{score.cardPoints[t]}<small> pts</small></div>
+          <div class="gain num">+{shown[t]}</div>
+          <div class="tot num">{scores[t]} / {target}</div>
           <div class="bar"><span style="width: {Math.min(100, (scores[t] / target) * 100)}%"></span></div>
         </div>
       {/each}
@@ -83,40 +83,78 @@
   .wrap {
     position: fixed; inset: 0; z-index: 70;
     display: grid; place-items: center;
-    background: rgba(4, 14, 11, .72);
+    /* Warm smoke, not a cold grey scrim. */
+    background: rgba(11, 9, 8, .78);
     backdrop-filter: blur(3px);
     padding: 16px;
     animation: fade .25s ease both;
   }
+
+  /* A page torn from the score book: parchment-edged leather, gilt rule. */
   .card-panel {
     width: min(430px, 100%);
-    display: flex; flex-direction: column; gap: 14px;
-    padding: 20px;
-    border-radius: 20px;
-    background: linear-gradient(#154232, #0c2a20);
-    border: 3px solid var(--gold);
-    box-shadow: 0 18px 50px rgba(0, 0, 0, .7);
-    animation: pop .4s var(--spring) both;
+    display: flex; flex-direction: column; gap: 15px;
+    padding: 22px;
+    border-radius: 6px;
+    background:
+      radial-gradient(120% 90% at 50% 0%, var(--leather-1), var(--bister) 60%, var(--void));
+    border: 1px solid var(--gold-deep);
+    box-shadow:
+      inset 0 1px 0 rgba(234, 211, 160, .2),
+      inset 0 0 0 4px rgba(11, 9, 8, .5),
+      inset 0 0 0 5px rgba(200, 160, 74, .18),
+      0 20px 54px rgba(0, 0, 0, .75);
+    animation: pop .42s var(--ease-elastic-3) both;
   }
-  .lost { border-color: #8e3038; }
-  h2 { margin: 0; text-align: center; font-size: 25px; letter-spacing: -.01em; }
-  .won h2 { color: var(--gold); text-shadow: 0 3px 0 rgba(0, 0, 0, .4); }
-  .lost h2 { color: #ff8d96; }
+  .lost { border-color: var(--oxblood); }
 
-  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .team {
-    padding: 10px; border-radius: 13px; text-align: center;
-    background: rgba(0, 0, 0, .28); border: 2px solid var(--c);
+  h2 {
+    margin: 0; text-align: center;
+    font-family: var(--font-display);
+    font-size: clamp(26px, 8vw, 36px);
+    font-weight: 400;
+    line-height: 1.05;
   }
-  .mine { box-shadow: 0 0 0 2px rgba(255, 255, 255, .18); }
-  .nm { font-size: 12px; font-weight: 800; }
-  .nm i { display: block; font-style: normal; font-size: 10px; color: var(--gold); text-transform: uppercase; }
-  .pts { font-size: 26px; font-weight: 900; }
-  .pts small { font-size: 11px; font-weight: 700; color: var(--ink-dim); }
-  .gain { font-size: 17px; font-weight: 900; color: var(--gold); }
-  .tot { font-size: 11px; color: var(--ink-dim); margin-top: 3px; }
-  .bar { height: 5px; border-radius: 3px; background: rgba(0, 0, 0, .4); overflow: hidden; margin-top: 4px; }
-  .bar span { display: block; height: 100%; background: var(--c); transition: width .7s var(--spring); }
+  .won h2 { color: var(--gold); text-shadow: 0 2px 0 var(--void), 0 0 28px rgba(200, 160, 74, .3); }
+  .lost h2 { color: var(--vermillon); text-shadow: 0 2px 0 var(--void); }
+
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .team {
+    padding: 11px 9px; border-radius: 4px; text-align: center;
+    background: rgba(11, 9, 8, .45);
+    border: 1px solid var(--c);
+    box-shadow: inset 0 1px 0 rgba(234, 211, 160, .1);
+  }
+  .mine { box-shadow: inset 0 1px 0 rgba(234, 211, 160, .16), 0 0 16px color-mix(in srgb, var(--c) 35%, transparent); }
+  .nm {
+    font-family: var(--font-roman); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--parchment);
+  }
+  .nm i {
+    display: block; font-style: normal; font-size: 9px; letter-spacing: .14em;
+    color: var(--gold); margin-top: 1px;
+  }
+  .pts { font-size: 28px; color: var(--parchment); text-shadow: 0 -1px 0 rgba(0, 0, 0, .6); }
+  .pts small {
+    font-family: var(--font-roman); font-size: 10px; font-weight: 600;
+    letter-spacing: .1em; color: var(--parchment-faint);
+  }
+  /* The counter that rolls up with a rising blip — the most Balatro thing here. */
+  .gain {
+    font-size: 19px; color: var(--gold);
+    text-shadow: 0 1px 0 var(--void), 0 0 14px rgba(200, 160, 74, .4);
+  }
+  .tot { font-size: 11px; color: var(--parchment-faint); margin-top: 3px; letter-spacing: .06em; }
+  .bar {
+    height: 4px; border-radius: 2px; margin-top: 5px; overflow: hidden;
+    background: rgba(0, 0, 0, .55);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, .7);
+  }
+  .bar span {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, var(--void)), var(--c));
+    transition: width .7s var(--ease-elastic-3);
+  }
 
   .notes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 

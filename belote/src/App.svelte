@@ -2,14 +2,16 @@
   import { onMount } from 'svelte';
   import { connect, joinSeat, leaveSeat, net, onEvent, readSeat, send, watchLifecycle } from './net.svelte';
   import { audio, sfx, toggleMute, unlock } from './sfx.svelte';
-  import { banner, confetti, floatText, fx, shake } from './fx.svelte';
-  import { SEAT_LABEL, SUIT_GLYPH, SUIT_IS_RED, TEAM_LABEL, relative } from './cards';
+  import { banner, embers, floatText, fx, shake } from './fx.svelte';
+  import { SEAT_LABEL, SUIT_INK, SUIT_LABEL, TEAM_LABEL, relative } from './cards';
   import Bidding from './Bidding.svelte';
   import DealEnd from './DealEnd.svelte';
   import Hand from './Hand.svelte';
   import Lobby from './Lobby.svelte';
   import Overlay from './Overlay.svelte';
   import Seat from './Seat.svelte';
+  import Sigil from './Sigil.svelte';
+  import Suit from './Suit.svelte';
   import Trick from './Trick.svelte';
 
   const urlSeat = readSeat();
@@ -67,10 +69,16 @@
           break;
         case 'contract': {
           // The server names this field `trump`, not `suit` — reading the wrong
-          // one silently produced "Atout undefined" on screen.
-          const g = SUIT_GLYPH[e.trump] ?? '';
-          banner(`${SEAT_LABEL[e.taker] ?? e.taker} prend ${g}`, `Atout ${e.trump}`, 'gold');
-          shake();
+          // one silently produced "Atout undefined" on screen. The enseigne is
+          // stamped into the wax rather than spelled out.
+          banner(
+            `${SEAT_LABEL[e.taker] ?? e.taker} prend`,
+            `Atout ${SUIT_LABEL[e.trump] ?? e.trump}`,
+            'gold',
+            2400,
+            { seal: true, suit: e.trump },
+          );
+          shake(2);
           break;
         }
         case 'play':
@@ -80,22 +88,25 @@
           sfx.trick();
           const tone = e.team === 'ns' ? 'ns' : 'eo';
           if (e.points > 0) floatText(`+${e.points}`, tone, 50, 40);
-          if (e.points >= 30) shake();
+          // Amplitude follows the stakes: a 12-point trick should not hit as
+          // hard as a 40-point one.
+          if (e.points >= 30) shake(3);
+          else if (e.points >= 18) shake(1);
           break;
         }
         case 'belote':
           sfx.belote();
           banner('Belote !', SEAT_LABEL[e.seat] ?? '', 'gold', 1600);
-          shake();
+          shake(2);
           break;
         case 'deal_end':
-          if (e.capot) { shake(); }
+          if (e.capot) { shake(3); embers(2200, 60); }
           break;
         case 'game_end': {
           const mine = s?.teams?.[you];
           const win = e.winner === mine;
           (win ? sfx.win : sfx.lose)();
-          if (win) confetti();
+          if (win) embers();
           break;
         }
         case 'paused':
@@ -118,7 +129,7 @@
 
 <svelte:window onpointerdown={unlock} />
 
-<div class="root" class:shake={fx.shaking}>
+<div class="root shake-{fx.shakeTier}" class:shake={fx.shaking}>
   {#if !joined}
     <Lobby bind:name={playerName} onsit={sit} />
   {:else if net.seatBusy}
@@ -142,7 +153,9 @@
       </div>
       <div class="mid">
         {#if s.trump}
-          <span class="trump" class:red={SUIT_IS_RED[s.trump]}>{SUIT_GLYPH[s.trump]}</span>
+          <span class="trump" title={SUIT_LABEL[s.trump]}>
+            <Suit suit={s.trump} size={26} color={SUIT_INK[s.trump]} labelled />
+          </span>
         {/if}
         {#if s.taker}<span class="pill">{SEAT_LABEL[s.taker]} preneur</span>{/if}
         {#if s.carried}<span class="pill">report {s.carried}</span>{/if}
@@ -178,6 +191,7 @@
         </div>
 
         <div class="centre">
+          <Sigil {you} turn={s.turn} />
           {#if s.phase === 'bidding' && s.bidding}
             <Bidding bidding={s.bidding} retourne={s.retourne} {template}
                      yourTurn={s.bidding.current === you} onbid={bid} />
@@ -187,7 +201,7 @@
               <p>En attente des joueurs…</p>
             </div>
           {:else}
-            <Trick trick={s.trick} {you} {template} winner={s.trickWinner} />
+            <Trick trick={s.trick} {you} {template} winner={s.trickWinner} trump={s.trump} />
           {/if}
         </div>
 
@@ -213,7 +227,7 @@
             &nbsp;
           {/if}
         </div>
-        <Hand cards={s.hand} playable={s.playable} {template} {yourTurn} onplay={play} />
+        <Hand cards={s.hand} playable={s.playable} {template} {yourTurn} trump={s.trump} onplay={play} />
       </div>
     </main>
 
@@ -241,21 +255,49 @@
     padding: 2px 2px 8px;
   }
   .scores { display: flex; gap: 7px; }
+  /* Scores on brass tallies. The team colour is the engraved edge, not a fill:
+     a filled block of team colour is what made the old header read as generic. */
   .sc {
-    display: flex; flex-direction: column; align-items: center; line-height: 1;
-    padding: 5px 11px; border-radius: 11px;
-    background: rgba(0, 0, 0, .3); border: 2px solid var(--c);
+    display: flex; flex-direction: column; align-items: center; line-height: 1.05;
+    padding: 5px 12px; border-radius: 4px;
+    background: linear-gradient(var(--leather-2), var(--leather-0));
+    border: 1px solid var(--c);
+    box-shadow:
+      inset 0 1px 0 rgba(234, 211, 160, .16),
+      inset 0 -2px 5px rgba(0, 0, 0, .5),
+      0 2px 0 var(--void);
   }
-  .sc.mine { box-shadow: 0 0 0 2px rgba(255, 255, 255, .2); }
-  .lab { font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-dim); }
-  .sc b { font-size: 19px; }
+  .sc.mine { box-shadow: inset 0 1px 0 rgba(234, 211, 160, .22), 0 2px 0 var(--void), 0 0 0 1px var(--c), 0 0 16px color-mix(in srgb, var(--c) 40%, transparent); }
+  .lab {
+    font-family: var(--font-roman);
+    font-size: 8.5px; text-transform: uppercase; letter-spacing: .1em;
+    white-space: nowrap;
+    color: var(--parchment-faint);
+  }
+  .sc b {
+    font-family: var(--font-roman);
+    font-variant-numeric: tabular-nums;
+    font-size: 20px; font-weight: 800; color: var(--parchment);
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, .6);
+  }
   .mid { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: center; }
+  /* The trump, struck on a brass medallion — the single most consulted piece of
+     information on the screen, so it gets the only round frame on the board. */
   .trump {
-    font-size: 27px; line-height: 1; color: #f2ead8;
-    text-shadow: 0 2px 0 rgba(0, 0, 0, .5);
+    display: grid; place-items: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(60% 60% at 38% 30%, var(--leather-2), var(--void));
+    border: 1px solid var(--gold-deep);
+    box-shadow:
+      inset 0 1px 0 rgba(234, 211, 160, .22),
+      inset 0 -3px 7px rgba(0, 0, 0, .6),
+      0 0 16px rgba(200, 160, 74, .22);
   }
-  .trump.red { color: #ff7a85; }
-  .icon { padding: 9px 11px; min-height: 42px; display: grid; place-items: center; }
+  .icon {
+    padding: 9px 11px; min-height: 42px; display: grid; place-items: center;
+    color: var(--parchment-dim);
+  }
 
   .board { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; gap: 4px; }
   .row { display: flex; align-items: center; justify-content: center; }
@@ -265,29 +307,45 @@
   .bottom { flex-direction: column; gap: 2px; }
 
   .status {
-    font-size: 13px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
-    color: var(--ink-dim); min-height: 18px;
+    font-family: var(--font-roman);
+    font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--parchment-faint); min-height: 18px;
   }
-  .status.yours { color: var(--gold); text-shadow: 0 0 14px rgba(240, 181, 46, .5); }
+  .status.yours { color: var(--gold); text-shadow: 0 0 16px rgba(200, 160, 74, .55); }
 
-  .await { text-align: center; color: var(--ink-dim); }
-  .big-num { font-size: 50px; font-weight: 900; color: var(--gold); }
+  .await { text-align: center; color: var(--parchment-dim); position: relative; z-index: 1; }
+  .await p { font-family: var(--font-text); font-size: 15px; font-style: italic; }
+  .big-num {
+    font-family: var(--font-display);
+    font-size: 56px; color: var(--gold);
+    text-shadow: 0 3px 0 var(--void), 0 0 30px rgba(200, 160, 74, .3);
+  }
 
   .gate {
     flex: 1; display: flex; flex-direction: column; gap: 14px;
     align-items: center; justify-content: center; text-align: center; padding: 20px;
   }
-  .gate h1 { font-size: clamp(32px, 11vw, 52px); margin: 0; color: var(--gold); letter-spacing: -.03em; }
-  .lede { color: var(--ink-dim); max-width: 34ch; line-height: 1.5; }
+  .gate h1 {
+    font-family: var(--font-display);
+    font-size: clamp(34px, 12vw, 56px); margin: 0; color: var(--gold);
+    text-shadow: 0 3px 0 var(--void), 0 0 34px rgba(200, 160, 74, .25);
+  }
+  .lede {
+    font-family: var(--font-text); font-size: 17px;
+    color: var(--parchment-dim); max-width: 34ch; line-height: 1.55;
+  }
   .big { font-size: 17px; padding: 15px 28px; }
 
   .net, .toast {
     position: fixed; left: 50%; translate: -50% 0; z-index: 85;
-    padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 800;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, .5);
+    padding: 9px 17px; border-radius: 3px;
+    font-family: var(--font-roman);
+    font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    border: 1px solid rgba(0, 0, 0, .5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 6px 20px rgba(0, 0, 0, .6);
   }
-  .net { top: calc(env(safe-area-inset-top) + 8px); background: #6a4b12; color: #ffe6ae; }
-  .toast { bottom: calc(env(safe-area-inset-bottom) + 14px); background: #7d2029; color: #ffd9dc; }
+  .net { top: calc(env(safe-area-inset-top) + 8px); background: var(--gold-dark); color: var(--gold-hi); }
+  .toast { bottom: calc(env(safe-area-inset-bottom) + 14px); background: var(--oxblood-deep); color: #f4ccc6; }
 
   @media (min-width: 760px) {
     :root { --card-w: 104px; --card-h: 146px; }

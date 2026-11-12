@@ -222,19 +222,66 @@ server/.venv/bin/python -u server/tests/cli_game.py      # partie complète à 4
 ./deploy/deploy-belotier.sh                              # tests + build + mise en ligne
 ./deploy/check-belotier.sh                               # santé + chasse aux process fantômes
 ./belote/ui-check.sh                                     # vérification en navigateur réel
+./belote/check-tokens.sh                                 # jetons CSS (lancé par le déploiement)
+./belote/fetch-assets.sh                                 # re-télécharger polices + icônes (rare)
 ```
 
 **Vérifier dans un vrai navigateur.** La box n'a pas d'interface graphique, mais un
 Chromium headless y est installé (`~/.cache/ms-playwright`, ~900 Mo). `belote/ui-check.sh`
 ouvre quatre fenêtres mobiles, prend les quatre places, joue une donne et capture des
 écrans dans `/tmp/belotier-shots`, en signalant erreurs console, requêtes échouées et
-tout « undefined » affiché. **C'est le seul contrôle qui voit ce que voit un joueur** :
+tout « undefined » affiché, puis fait une passe sur `/template`.
+**C'est le seul contrôle qui voit ce que voit un joueur** :
 il a déjà attrapé un plantage au rendu, un champ d'événement erroné et un éventail de
 cartes rogné hors de l'écran — trois bugs invisibles pour le typage et les tests.
-Deux pièges du harnais : les cartes ont une animation de flottement infinie, donc
-Playwright ne les juge jamais « stables » (utiliser `force: true`), et le dossier
+Quatre pièges du harnais : les cartes ont une animation de flottement infinie, donc
+Playwright ne les juge jamais « stables » (utiliser `force: true`) ; le dossier
 `belote/` n'est **pas** couvert par `tsconfig.app.json` — d'où `tsconfig.belote.json`,
-désormais lancé par le script de déploiement.
+désormais lancé par le script de déploiement ; une capture `fullPage` d'une page
+longue et animée expire (passer `animations: 'disabled'`) ; et `hasText` matche les
+**descendants**, si bien qu'un sélecteur trop large tapait la tuile de démo
+« cachet de cire, en service » au lieu du bouton d'effet — d'où l'assertion
+« exactement une correspondance ».
+
+### Direction artistique « Grimoire / Marseille »
+
+Noir fumé et brun encre, or mat et oxblood, cuir et chandelle. Les jetons sont
+dans `belote/src/app.css`, les courbes dans `easings.css`. **Nuancier complet,
+catalogue d'animations, boutons, icônes et sons : `belotier.e1000.dev/template`**
+(`belote/template/`, seconde entrée Vite, bundle séparé). Cette page importe les
+*vrais* composants, affiche la source et la licence de chaque élément, et porte
+la seule section que rien d'automatique ne peut vérifier : **les sons**.
+
+Quatre pièges coûteux, tous rencontrés :
+
+1. **Un `var(--token)` inconnu est ignoré en silence.** Ni `tsc` ni
+   `svelte-check` ne le voient ; le résultat est du texte couleur de son fond.
+   Renommer la palette avait cassé 17 références. D'où `check-tokens.sh`, lancé
+   par `deploy-belotier.sh`. Il n'y a **plus de jeton `--ink`** : les fonds sont
+   `--void` / `--bister`, pour qu'une référence périmée casse visiblement.
+2. **Pirata One est une blackletter : ses chiffres sont illisibles** (son zéro
+   ressemble à un domino). Son `@font-face` **exclut `U+0030-0039`** par
+   `unicode-range`, et les chiffres retombent sur Cinzel — une règle, tous les
+   scores réglés, y compris dans du texte pas encore écrit.
+3. **Les polices doivent être les sous-ensembles `latin`, pas `latin-ext`** :
+   voir le piège n°5 plus haut. `fetch-assets.sh` l'assère en développant les
+   plages de `fc-query` (un `grep` littéral de `30-3b` échoue : la plage réelle
+   est `20-7e`).
+4. **`prefers-reduced-motion` : une durée de `.01ms` sur une animation infinie
+   la fait boucler des milliers de fois par seconde** au lieu de l'arrêter. Les
+   trois animations infinies (chandelle, rose des vents, foil) sont coupées
+   explicitement par `animation: none`.
+
+Les enseignes viennent de `src/lib/render/suits.ts` de Tarotier via
+`belote/src/Suit.svelte` — variantes `epee` / `coupe` / `denier` / `baton`, les
+quatre enseignes du tarot latin. `SUIT_GLYPH` (`♠♥♦♣`) **subsiste mais n'est plus
+affiché** : il ne sert qu'aux `aria-label`, où un lecteur d'écran a besoin de
+caractères et non de SVG.
+
+Aucune bibliothèque de boutons ou d'animations CSS n'est utilisée : les cinq
+candidates examinées ont une licence restreinte, introuvable, ou sont
+inaccessibles à une récupération automatique. Voir `ART-CREDITS.md`, et ne pas
+en réintroduire une sans vérifier les deux points.
 
 **Pièges spécifiques :**
 

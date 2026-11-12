@@ -1,0 +1,38 @@
+Icônes : game-icons.net — licence Creative Commons BY 3.0.
+https://game-icons.net/  —  https://creativecommons.org/licenses/by/3.0/
+L'attribution est obligatoire. Auteur de chaque icône ci-dessous ; le nom de
+fichier reprend la forme <auteur>--<icone>.svg.
+
+compass — lorc
+pentagram-rose — lorc
+wax-seal — lorc
+candle-flame — lorc
+candle-light — lorc
+candle-holder — lorc
+burning-embers — lorc
+crystal-ball — lorc
+eclipse — lorc
+moon — lorc
+sundial — lorc
+third-eye — lorc
+hourglass — lorc
+key — lorc
+feather — lorc
+scroll-unfurled — lorc
+book-cover — lorc
+open-book — lorc
+crown — lorc
+laurel-crown — lorc
+cowled — lorc
+ouroboros — lorc
+magic-swirl — lorc
+star-swirl — lorc
+triple-yin — lorc
+trefoil-lily — lorc
+suits — lorc
+skull-crossed-bones — lorc
+throne-king — delapouite
+round-table — delapouite
+card-exchange — delapouite
+card-joker — delapouite
+stamper — delapouite

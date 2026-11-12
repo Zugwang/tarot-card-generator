@@ -1,27 +1,105 @@
-/* Belotier — chunky, saturated, high-contrast. Mobile portrait first.
-   Motion is deliberately springy and overshooting rather than linear. */
+/* Belotier — direction artistique « Grimoire / Marseille ».
+ *
+ * Noir fumé et brun encre, or mat et oxblood, cuir et chandelle. Les enseignes
+ * sont celles du tarot latin (épée / coupe / denier / bâton), empruntées au
+ * registre SVG paramétrique de Tarotier plutôt qu'à Unicode.
+ *
+ * Motion is springy and overshooting rather than linear: see easings.css, whose
+ * curves are transcribed from open-props (MIT).
+ *
+ * Textures are inline SVG filters in data-URIs — there is not one image file in
+ * this stylesheet, which keeps the background free on a RAM-starved box. */
+
+@import './easings.css';
+
+/* ---------------------------------------------------------------- typographie
+ * Self-hosted woff2, `latin` subsets (U+0000-00FF) so they carry BOTH digits
+ * and French accents. The repo's older subsets in ../../public/fonts are
+ * latin-ext and have NO digits — pitfall #5 in CLAUDE.md. `fetch-assets.sh`
+ * asserts the coverage, so a bad subset fails the build rather than the eye. */
+
+@font-face {
+  font-family: 'Pirata One';
+  src: url('/fonts/pirata-one.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  /* Everything EXCEPT U+0030-0039. Pirata One's digits are blackletter
+     ornaments — its zero reads as a domino — so they are excluded here and the
+     next family in --font-display (Cinzel) supplies them. One rule fixes every
+     score, counter and "81 partout" at once. */
+  unicode-range:
+    U+0000-002F, U+003A-00FF, U+0131, U+0152-0153, U+02BC, U+02C6, U+02DA,
+    U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+2215;
+}
+@font-face {
+  font-family: 'Cinzel';
+  src: url('/fonts/cinzel.woff2') format('woff2');
+  font-weight: 400 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/fonts/eb-garamond.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
 
 :root {
-  --felt-0: #0a2019;
-  --felt-1: #0d2b22;
-  --felt-2: #12382c;
-  --ink: #f6f1e2;
-  --ink-dim: #a9b8ad;
-  --gold: #f0b52e;
-  --gold-deep: #c98d12;
-  --red: #e0414f;
-  --blue: #3d82e0;
-  --ns: #3d82e0;
-  --eo: #e0414f;
-  --shadow: 0 6px 0 rgba(0, 0, 0, .35), 0 10px 22px rgba(0, 0, 0, .45);
-  --shadow-lift: 0 14px 0 rgba(0, 0, 0, .3), 0 22px 40px rgba(0, 0, 0, .55);
-  --radius: 14px;
-  --spring: cubic-bezier(.34, 1.56, .64, 1);
-  --snap: cubic-bezier(.2, .9, .3, 1.4);
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  /* --- fond, du plus profond au brun encre -------------------------------- */
+  --void: #0b0908;
+  --bister: #1a120b;
+  --bister-soft: #241a10;
+
+  /* --- le tapis : cuir tanné, pas du feutre vert -------------------------- */
+  --leather-0: #2a1d12;
+  --leather-1: #3b2817;
+  --leather-2: #4a331d;
+
+  /* --- or mat : jamais le jaune saturé d'un bouton « premium » ------------ */
+  --gold: #c8a04a;
+  --gold-hi: #ead3a0;
+  --gold-deep: #8a6321;
+  --gold-dark: #5a3f14;
+
+  /* --- rouges : l'oxblood du cuir, le vermillon du Dodal 1701 ------------- */
+  --oxblood: #8c2b1e;
+  --oxblood-deep: #5c1a11;
+  --vermillon: #b5432c;
+
+  --parchment: #e8dcc0;
+  --parchment-dim: #a89878;
+  --parchment-faint: #6f6450;
+
+  /* Les équipes passent de bleu/rouge à or/oxblood : c'était le signal le plus
+     générique de toute la page. */
+  --ns: var(--gold);
+  --eo: var(--oxblood);
+
+  /* --- ombres : chaudes, jamais du noir pur ------------------------------- */
+  --shadow: 0 5px 0 rgba(8, 5, 2, .5), 0 10px 24px rgba(0, 0, 0, .6);
+  --shadow-lift: 0 12px 0 rgba(8, 5, 2, .45), 0 24px 44px rgba(0, 0, 0, .7);
+  --glow-gold: 0 0 18px rgba(200, 160, 74, .45);
+  --glow-candle: 0 0 60px rgba(214, 150, 60, .22);
+
+  --radius: 12px;
+
+  --spring: var(--ease-elastic-3);
+  --snap: var(--ease-snap);
+
+  --font-display: 'Pirata One', 'Cinzel', serif;
+  --font-roman: 'Cinzel', 'Times New Roman', serif;
+  --font-text: 'EB Garamond', Georgia, 'Times New Roman', serif;
+
   /* Card geometry, driven from JS so the fan maths stays in one place. */
   --card-w: 86px;
   --card-h: 120px;
+
+  /* Grain de cuir, généré par feTurbulence : aucun fichier image. */
+  --tex-leather:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.42' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23l)' opacity='.55'/%3E%3C/svg%3E");
+  /* Grain fin de papier, posé en voile sur toute la page. */
+  --tex-grain:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='.6'/%3E%3C/svg%3E");
 }
 
 * { box-sizing: border-box; }
@@ -33,17 +111,41 @@ html, body {
 }
 
 body {
-  font-family: var(--font);
-  color: var(--ink);
-  background:
-    radial-gradient(130% 90% at 50% 8%, var(--felt-2) 0%, var(--felt-1) 45%, var(--felt-0) 100%);
+  font-family: var(--font-text);
+  font-size: 16px;
+  color: var(--parchment);
+  background-color: var(--void);
+  background-image:
+    /* halo de chandelle, en haut */
+    radial-gradient(70% 38% at 50% -4%, rgba(214, 150, 60, .13), transparent 72%),
+    /* le cuir du tapis : resserre, pour que les bords tombent vraiment au noir */
+    radial-gradient(76% 46% at 50% 36%, var(--bister) 0%, #120d08 46%, var(--void) 78%),
+    var(--tex-leather);
+  background-size: auto, auto, 220px 220px;
+  background-blend-mode: screen, normal, soft-light;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
 }
 
+/* Voile de grain sur toute la page : c'est ce qui enlève l'aspect « dégradé CSS
+   propre » et donne une surface. Non interactif, et sous tout le reste. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--tex-grain);
+  background-size: 140px 140px;
+  mix-blend-mode: overlay;
+  opacity: .055;
+}
+
 #app {
+  position: relative;
+  z-index: 1;
   min-height: 100dvh;
   padding:
     calc(env(safe-area-inset-top) + 6px)
@@ -54,49 +156,226 @@ body {
   flex-direction: column;
 }
 
-/* The whole board shakes on big moments; the class is toggled from JS. */
-.shake { animation: shake .42s cubic-bezier(.36, .07, .19, .97); }
-@keyframes shake {
-  10%, 90% { transform: translate(-2px, 1px) rotate(-.3deg); }
-  20%, 80% { transform: translate(4px, -2px) rotate(.4deg); }
-  30%, 50%, 70% { transform: translate(-7px, 2px) rotate(-.6deg); }
-  40%, 60% { transform: translate(7px, -1px) rotate(.6deg); }
+/* La chandelle : une lueur chaude qui vacille. La keyframe est volontairement
+   non périodique (valeurs irrégulières) — un sin() régulier se lit comme une
+   animation CSS, pas comme une flamme. */
+#app::before {
+  content: '';
+  position: fixed;
+  left: 50%;
+  top: -14vh;
+  width: min(140vw, 760px);
+  aspect-ratio: 1;
+  translate: -50% 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(226, 164, 74, .16), transparent 62%);
+  animation: candle 7.3s ease-in-out infinite;
 }
+@keyframes candle {
+  0%   { opacity: .82; scale: 1; }
+  11%  { opacity: 1;   scale: 1.03; }
+  23%  { opacity: .74; scale: .99; }
+  37%  { opacity: .95; scale: 1.02; }
+  52%  { opacity: .68; scale: .97; }
+  61%  { opacity: .9;  scale: 1.01; }
+  79%  { opacity: .78; scale: 1; }
+  88%  { opacity: 1;   scale: 1.04; }
+  100% { opacity: .82; scale: 1; }
+}
+
+/* ------------------------------------------------------------------ secousses
+ * One keyframe, amplitude driven by a custom property, so callers pick a tier
+ * instead of the stylesheet carrying three near-identical animations. */
+.shake { animation: shake var(--shake-dur, .42s) cubic-bezier(.36, .07, .19, .97); }
+.shake-1 { --shake-amp: .5; --shake-dur: .3s; }
+.shake-2 { --shake-amp: 1; }
+.shake-3 { --shake-amp: 1.9; --shake-dur: .56s; }
+
+@keyframes shake {
+  10%, 90% { transform: translate(calc(var(--shake-amp, 1) * -2px), calc(var(--shake-amp, 1) * 1px)) rotate(calc(var(--shake-amp, 1) * -.3deg)); }
+  20%, 80% { transform: translate(calc(var(--shake-amp, 1) * 4px), calc(var(--shake-amp, 1) * -2px)) rotate(calc(var(--shake-amp, 1) * .4deg)); }
+  30%, 50%, 70% { transform: translate(calc(var(--shake-amp, 1) * -7px), calc(var(--shake-amp, 1) * 2px)) rotate(calc(var(--shake-amp, 1) * -.6deg)); }
+  40%, 60% { transform: translate(calc(var(--shake-amp, 1) * 7px), calc(var(--shake-amp, 1) * -1px)) rotate(calc(var(--shake-amp, 1) * .6deg)); }
+}
+
+/* -------------------------------------------------------------------- boutons
+ * Three registers, all hand-authored. No library here: the licence of every
+ * CSS-button collection I checked was either restricted or unpublished (see the
+ * header of fetch-assets.sh). */
 
 button {
-  font: inherit;
-  font-weight: 800;
-  letter-spacing: .02em;
-  color: var(--ink);
-  background: linear-gradient(#1b4b3a, #0f3328);
-  border: 2px solid rgba(255, 255, 255, .18);
-  border-radius: 12px;
-  padding: 12px 18px;
-  min-height: 48px;           /* comfortable touch target */
-  box-shadow: 0 4px 0 rgba(0, 0, 0, .45);
+  font-family: var(--font-roman);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--parchment);
+  /* Plaque de laiton gravée : le biseau est fait d'ombres internes (clair en
+     haut, sombre en bas), pas d'un dégradé de remplissage. */
+  background:
+    linear-gradient(var(--leather-2), var(--leather-0)) padding-box;
+  border: 1px solid var(--gold-dark);
+  border-radius: var(--radius);
+  padding: 13px 20px;
+  min-height: 48px;
+  box-shadow:
+    inset 0 1px 0 rgba(234, 211, 160, .22),
+    inset 0 -2px 6px rgba(0, 0, 0, .5),
+    0 4px 0 var(--void),
+    0 7px 16px rgba(0, 0, 0, .5);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, .7), 0 1px 0 rgba(234, 211, 160, .14);
   cursor: pointer;
-  transition: transform .12s var(--snap), box-shadow .12s ease, filter .12s ease;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform .11s var(--snap),
+    box-shadow .11s ease,
+    border-color .18s ease,
+    filter .18s ease;
 }
-button:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 rgba(0, 0, 0, .45); }
-button:disabled { opacity: .4; cursor: not-allowed; }
+
+button:hover:not(:disabled) { border-color: var(--gold-deep); filter: brightness(1.1); }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+button:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 1px 0 rgba(234, 211, 160, .12),
+    inset 0 -1px 4px rgba(0, 0, 0, .55),
+    0 0 0 var(--void),
+    0 2px 6px rgba(0, 0, 0, .45);
+}
+
+button:disabled { opacity: .36; cursor: not-allowed; filter: saturate(.4); }
+
+/* Feuille d'or, avec un reflet qui balaye au survol et au focus. */
 button.primary {
-  background: linear-gradient(#f3c14a, var(--gold-deep));
   color: #2a1c02;
-  border-color: rgba(255, 255, 255, .5);
+  background: linear-gradient(170deg, var(--gold-hi) 0%, var(--gold) 46%, var(--gold-deep) 100%);
+  border-color: var(--gold-hi);
+  text-shadow: 0 1px 0 rgba(255, 245, 220, .5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 235, .7),
+    inset 0 -3px 8px rgba(90, 63, 20, .5),
+    0 4px 0 var(--gold-dark),
+    0 8px 20px rgba(140, 98, 30, .4);
 }
-button.danger { background: linear-gradient(#e0414f, #9c2330); }
+button.primary::after {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(68deg, transparent 38%, rgba(255, 252, 242, .62) 50%, transparent 62%);
+  translate: -120% 0;
+  pointer-events: none;
+}
+button.primary:hover:not(:disabled)::after,
+button.primary:focus-visible::after { animation: sweep .72s var(--ease-out-3); }
+@keyframes sweep { from { translate: -120% 0; } to { translate: 120% 0; } }
+
+button.danger {
+  color: var(--parchment);
+  background: linear-gradient(170deg, var(--vermillon), var(--oxblood-deep));
+  border-color: var(--oxblood);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 180, .24),
+    inset 0 -3px 8px rgba(0, 0, 0, .5),
+    0 4px 0 #2d0b06,
+    0 8px 18px rgba(0, 0, 0, .5);
+}
+
+/* Cachet de cire, pour le grand « Je prends ». Les bords irréguliers viennent
+   d'un border-radius à huit valeurs, pas d'une image. */
+button.seal {
+  font-family: var(--font-display);
+  font-size: 19px;
+  letter-spacing: .06em;
+  text-transform: none;
+  color: #f4e4d0;
+  min-height: 92px;
+  padding: 16px 22px;
+  background: radial-gradient(60% 60% at 38% 32%, var(--vermillon), var(--oxblood) 58%, var(--oxblood-deep) 100%);
+  border: 0;
+  border-radius: 48% 52% 46% 54% / 54% 46% 53% 47%;
+  box-shadow:
+    inset 0 3px 10px rgba(255, 190, 160, .26),
+    inset 0 -6px 14px rgba(0, 0, 0, .5),
+    0 6px 0 #2d0b06,
+    0 12px 26px rgba(0, 0, 0, .6);
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .6);
+}
+button.seal:active:not(:disabled) { transform: translateY(5px) rotate(-1.2deg); }
+
+button.ghost {
+  background: rgba(26, 18, 11, .55);
+  border: 1px solid rgba(200, 160, 74, .28);
+  box-shadow: inset 0 1px 0 rgba(234, 211, 160, .1);
+  color: var(--parchment-dim);
+}
+
+button.big { font-size: 16px; padding: 16px 26px; min-height: 58px; }
+
+/* ------------------------------------------------------------------ étiquettes */
 
 .pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 11px; border-radius: 999px;
-  background: rgba(0, 0, 0, .3);
-  border: 1px solid rgba(255, 255, 255, .14);
-  font-size: 13px; font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(11, 9, 8, .55);
+  border: 1px solid rgba(200, 160, 74, .24);
+  box-shadow: inset 0 1px 0 rgba(234, 211, 160, .08);
+  font-family: var(--font-roman);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--parchment-dim);
 }
+
+/* Chiffres : toujours en Cinzel, tabulaires, pour que les scores ne dansent
+   pas en changeant de valeur. */
+.num {
+  font-family: var(--font-roman);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* Texte gravé dans le cuir — pour les intitulés discrets. */
+.engraved {
+  color: var(--parchment-faint);
+  text-shadow: 0 1px 0 rgba(234, 211, 160, .09);
+  font-family: var(--font-roman);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  font-size: 10.5px;
+}
+
+/* Le gros titre cerné de Balatro : contour épais + ombre dure. `paint-order`
+   met le contour SOUS le remplissage, sinon il ronge la lettre. */
+.outlined {
+  font-family: var(--font-display);
+  paint-order: stroke fill;
+  -webkit-text-stroke: 5px var(--void);
+  text-shadow:
+    0 3px 0 var(--void),
+    0 6px 0 rgba(0, 0, 0, .55),
+    0 10px 24px rgba(0, 0, 0, .7);
+  letter-spacing: .01em;
+  line-height: .95;
+}
+
+/* ------------------------------------------------------------------- réglages */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
     transition-duration: .01ms !important;
   }
+  /* Les animations infinies demandent un traitement explicite : une durée de
+     .01ms les fait boucler des milliers de fois par seconde au lieu de les
+     arrêter. C'est exactement le genre de détail qui casse en silence. */
+  #app::before,
+  .sigil,
+  .foil::after { animation: none !important; }
 }
